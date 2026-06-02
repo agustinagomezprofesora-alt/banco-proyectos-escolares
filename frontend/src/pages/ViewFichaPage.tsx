@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { fetchProject, updateProject } from '../api/api'
+import { fetchProject, submitProjectReview, updateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import { Project } from '../types'
 
@@ -51,7 +51,7 @@ export default function ViewFichaPage() {
 
   if (loading) return <div className="container"><p>Cargando...</p></div>
   if (!project) return <div className="container"><p>Proyecto no encontrado</p></div>
-  if (user?.id !== project.author.id) {
+  if (user?.role !== 'ADMIN' && user?.id !== project.author.id) {
     return <div className="container"><p>No tienes permiso para ver este proyecto</p></div>
   }
 
@@ -206,7 +206,7 @@ export default function ViewFichaPage() {
             <div className="button-group">
               <button onClick={() => setEditing(true)}>Editar ficha</button>
               <button onClick={() => {
-                updateProject(project.id, { status: 'En revisión' })
+                submitProjectReview(project.id)
                   .then(() => navigate('/projects'))
                   .catch((err) => setError(err?.message || 'Error enviando a revisión'))
               }}>

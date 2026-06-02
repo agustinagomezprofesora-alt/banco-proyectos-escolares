@@ -28,7 +28,7 @@ export const register = async (req: Request, res: Response) => {
   })
   const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '8h' })
 
-  return res.status(201).json({ user: { id: user.id, name: user.name, email: user.email }, token })
+  return res.status(201).json({ user: { id: user.id, name: user.name, email: user.email, role: user.role }, token })
 }
 
 export const login = async (req: Request, res: Response) => {
@@ -48,7 +48,7 @@ export const login = async (req: Request, res: Response) => {
   }
 
   const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '8h' })
-  return res.json({ user: { id: user.id, name: user.name, email: user.email }, token })
+  return res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role }, token })
 }
 
 export const getCurrentUser = async (req: any, res: Response) => {

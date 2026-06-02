@@ -1,0 +1,2 @@
+admin@escuela.local
+admin123456

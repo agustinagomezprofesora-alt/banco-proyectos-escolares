@@ -4,7 +4,7 @@ import { JWT_SECRET } from '../config'
 import { prisma } from '../config/prisma'
 
 export interface AuthRequest extends Request {
-  user?: { id: number; email: string }
+  user?: { id: number; name: string; email: string; role: string }
 }
 
 export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -21,7 +21,7 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
       return res.status(401).json({ message: 'Invalid token' })
     }
 
-    req.user = { id: user.id, email: user.email }
+    req.user = { id: user.id, name: user.name, email: user.email, role: user.role }
     next()
   } catch (error) {
     return res.status(401).json({ message: 'Invalid or expired token' })

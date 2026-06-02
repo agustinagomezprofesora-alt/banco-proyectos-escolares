@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { fetchProjects, deleteProject } from '../api/api'
+import { fetchProjects, deleteProject, generateFicha } from '../api/api'
 import { Project } from '../types'
 
 export default function ProjectsPage() {
@@ -36,17 +36,10 @@ export default function ProjectsPage() {
 
   const handleGenerateFicha = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/projects/${id}/generate`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('memoria_token')}` }
-      })
-      if (response.ok) {
-        navigate(`/projects/${id}/ficha`)
-      } else {
-        setError('No se pudo generar la ficha')
-      }
+      await generateFicha(id)
+      navigate(`/projects/${id}/ficha`)
     } catch (err: any) {
-      setError(err?.message || 'Error generando ficha')
+      setError(err?.message || 'No se pudo generar la ficha')
     }
   }
 

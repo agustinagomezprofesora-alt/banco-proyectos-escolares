@@ -1,5 +1,7 @@
 import { prisma } from '../config/prisma'
 
+const authorSelect = { id: true, name: true, email: true, role: true } as const
+
 export interface ProjectCreateData {
   title: string
   description: string
@@ -28,12 +30,12 @@ export interface ProjectUpdateData {
 export const getProjects = () => {
   return prisma.project.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { author: { select: { id: true, name: true, email: true } } }
+    include: { author: { select: authorSelect } }
   })
 }
 
 export const getProjectById = (id: number) => {
-  return prisma.project.findUnique({ where: { id }, include: { author: true } })
+  return prisma.project.findUnique({ where: { id }, include: { author: { select: authorSelect } } })
 }
 
 export const createProject = (data: ProjectCreateData) => {

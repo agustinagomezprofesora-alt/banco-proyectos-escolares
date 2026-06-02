@@ -1,4 +1,4 @@
-import { User, Project } from '../types'
+import { User, Project, ProjectStats } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
 
@@ -46,3 +46,44 @@ export const updateProject = (id: number, payload: Partial<Project>) =>
 
 export const deleteProject = (id: number) =>
   fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE', headers: buildHeaders() }).then(handleResponse)
+
+export const fetchPublishedProjects = (params?: {
+  search?: string
+  area?: string
+  course?: string
+  experienceType?: string
+  isReusable?: string
+  year?: string
+}) => {
+  const query = new URLSearchParams()
+  if (params?.search) query.set('search', params.search)
+  if (params?.area) query.set('area', params.area)
+  if (params?.course) query.set('course', params.course)
+  if (params?.experienceType) query.set('experienceType', params.experienceType)
+  if (params?.isReusable) query.set('isReusable', params.isReusable)
+  if (params?.year) query.set('year', params.year)
+
+  const url = `${API_BASE}/projects/published${query.toString() ? `?${query.toString()}` : ''}`
+  return fetch(url, { headers: buildHeaders(false) }).then(handleResponse) as Promise<Project[]>
+}
+
+export const fetchPublishedProject = (id: number) =>
+  fetch(`${API_BASE}/projects/published/${id}`, { headers: buildHeaders(false) }).then(handleResponse) as Promise<Project>
+
+export const duplicateProject = (id: number) =>
+  fetch(`${API_BASE}/projects/${id}/duplicate`, { method: 'POST', headers: buildHeaders() }).then(handleResponse)
+
+export const generateFicha = (id: number) =>
+  fetch(`${API_BASE}/projects/${id}/generate`, { method: 'POST', headers: buildHeaders() }).then(handleResponse)
+
+export const submitProjectReview = (id: number) =>
+  fetch(`${API_BASE}/projects/${id}/submit-review`, { method: 'POST', headers: buildHeaders() }).then(handleResponse)
+
+export const publishProject = (id: number) =>
+  fetch(`${API_BASE}/projects/${id}/publish`, { method: 'POST', headers: buildHeaders() }).then(handleResponse) as Promise<{ message: string; project: Project }>
+
+export const archiveProject = (id: number) =>
+  fetch(`${API_BASE}/projects/${id}/archive`, { method: 'POST', headers: buildHeaders() }).then(handleResponse) as Promise<{ message: string; project: Project }>
+
+export const fetchStats = () =>
+  fetch(`${API_BASE}/stats`, { headers: buildHeaders() }).then(handleResponse) as Promise<ProjectStats>

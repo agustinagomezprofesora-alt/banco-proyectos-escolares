@@ -1,8 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createProject, fetchProject, updateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
-import { Project } from '../types'
 
 const initialState = {
   title: '',
@@ -13,17 +12,32 @@ const initialState = {
   experienceType: '',
   link: '',
   isReusable: false,
-  status: 'Cargado'
+  status: 'Cargado',
+  improvedTitle: '',
+  generatedSummary: '',
+  objectives: '',
+  mainActivities: '',
+  resourcesUsed: '',
+  finalProducts: '',
+  evidenceDescription: '',
+  reuseSuggestions: '',
+  improvementSuggestions: '',
+  suggestedTags: ''
 }
 
 export default function ProjectFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
-  const [project, setProject] = useState<Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'author'>>(initialState)
+  const [project, setProject] = useState<any>(initialState)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const isEdit = Boolean(id)
+  const isAdmin = user?.role === 'ADMIN'
+  const isAdminRoute = location.pathname.startsWith('/admin')
+
+  const backTo = isAdminRoute && id ? `/admin/projects/${id}` : '/projects'
 
   useEffect(() => {
     if (!id) return
@@ -39,7 +53,17 @@ export default function ProjectFormPage() {
           experienceType: data.experienceType,
           link: data.link ?? '',
           isReusable: data.isReusable,
-          status: data.status
+          status: data.status,
+          improvedTitle: data.improvedTitle ?? '',
+          generatedSummary: data.generatedSummary ?? '',
+          objectives: data.objectives ?? '',
+          mainActivities: data.mainActivities ?? '',
+          resourcesUsed: data.resourcesUsed ?? '',
+          finalProducts: data.finalProducts ?? '',
+          evidenceDescription: data.evidenceDescription ?? '',
+          reuseSuggestions: data.reuseSuggestions ?? '',
+          improvementSuggestions: data.improvementSuggestions ?? '',
+          suggestedTags: data.suggestedTags ?? ''
         })
       })
       .catch((err: any) => setError(err?.message || 'No se pudo cargar el proyecto'))
@@ -54,7 +78,7 @@ export default function ProjectFormPage() {
       } else {
         await createProject(project)
       }
-      navigate('/projects')
+      navigate(isAdminRoute && id ? `/admin/projects/${id}` : '/projects')
     } catch (err: any) {
       setError(err?.message || 'No se pudo guardar el proyecto')
     }
@@ -64,7 +88,7 @@ export default function ProjectFormPage() {
     <div className="container">
       <header className="header">
         <h1>{isEdit ? 'Editar proyecto' : 'Nuevo proyecto'}</h1>
-        <button onClick={() => navigate('/projects')}>Volver</button>
+        <button onClick={() => navigate(backTo)}>Volver</button>
       </header>
       {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit} className="form-grid">
@@ -100,16 +124,66 @@ export default function ProjectFormPage() {
           <input type="checkbox" checked={project.isReusable} onChange={(e) => setProject({ ...project, isReusable: e.target.checked })} />
           Reutilizable
         </label>
-        <label>
-          Estado
-          <select value={project.status} onChange={(e) => setProject({ ...project, status: e.target.value })}>
-            <option value="Cargado">Cargado</option>
-            <option value="Borrador generado">Borrador generado</option>
-            <option value="En revisión">En revisión</option>
-            <option value="Publicado">Publicado</option>
-            <option value="Archivado">Archivado</option>
-          </select>
-        </label>
+
+        {isAdmin && (
+          <label>
+            Estado
+            <select value={project.status} onChange={(e) => setProject({ ...project, status: e.target.value })}>
+              <option value="Cargado">Cargado</option>
+              <option value="Borrador generado">Borrador generado</option>
+              <option value="En revisión">En revisión</option>
+              <option value="Publicado">Publicado</option>
+              <option value="Archivado">Archivado</option>
+            </select>
+          </label>
+        )}
+
+        {isAdmin && isEdit && (
+          <fieldset className="admin-fieldset">
+            <legend>Campos generados de la ficha</legend>
+            <label>
+              Título mejorado
+              <input value={project.improvedTitle || ''} onChange={(e) => setProject({ ...project, improvedTitle: e.target.value })} />
+            </label>
+            <label>
+              Resumen institucional
+              <textarea value={project.generatedSummary || ''} onChange={(e) => setProject({ ...project, generatedSummary: e.target.value })} />
+            </label>
+            <label>
+              Objetivos
+              <textarea value={project.objectives || ''} onChange={(e) => setProject({ ...project, objectives: e.target.value })} />
+            </label>
+            <label>
+              Actividades principales
+              <textarea value={project.mainActivities || ''} onChange={(e) => setProject({ ...project, mainActivities: e.target.value })} />
+            </label>
+            <label>
+              Recursos utilizados
+              <textarea value={project.resourcesUsed || ''} onChange={(e) => setProject({ ...project, resourcesUsed: e.target.value })} />
+            </label>
+            <label>
+              Producciones finales
+              <textarea value={project.finalProducts || ''} onChange={(e) => setProject({ ...project, finalProducts: e.target.value })} />
+            </label>
+            <label>
+              Evidencias
+              <textarea value={project.evidenceDescription || ''} onChange={(e) => setProject({ ...project, evidenceDescription: e.target.value })} />
+            </label>
+            <label>
+              Sugerencias de reutilización
+              <textarea value={project.reuseSuggestions || ''} onChange={(e) => setProject({ ...project, reuseSuggestions: e.target.value })} />
+            </label>
+            <label>
+              Sugerencias de mejora
+              <textarea value={project.improvementSuggestions || ''} onChange={(e) => setProject({ ...project, improvementSuggestions: e.target.value })} />
+            </label>
+            <label>
+              Etiquetas sugeridas
+              <input value={project.suggestedTags || ''} onChange={(e) => setProject({ ...project, suggestedTags: e.target.value })} />
+            </label>
+          </fieldset>
+        )}
+
         <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Guardar proyecto'}</button>
       </form>
     </div>
