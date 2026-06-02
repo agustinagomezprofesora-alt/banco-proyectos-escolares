@@ -8,7 +8,27 @@ datasource db {
 }
 
 model User {
-  id    Int    @id @default(autoincrement())
-  name  String
-  email String @unique
+  id       Int       @id @default(autoincrement())
+  name     String
+  email    String    @unique
+  password String
+  role     String    @default("user")
+  projects Project[]
+}
+
+model Project {
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String
+  teacher        String
+  course         String
+  area           String
+  experienceType String
+  link           String?
+  isReusable     Boolean  @default(false)
+  status         String   @default("Cargado")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  author         User     @relation(fields: [authorId], references: [id])
+  authorId       Int
 }
