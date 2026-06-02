@@ -20,7 +20,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const token = localStorage.getItem('memoria_token')
     const storedUser = localStorage.getItem('memoria_user')
     if (token && storedUser) {
-      setUser(JSON.parse(storedUser))
+      try {
+        setUser(JSON.parse(storedUser))
+      } catch {
+        localStorage.removeItem('memoria_token')
+        localStorage.removeItem('memoria_user')
+      }
     }
     setLoading(false)
   }, [])

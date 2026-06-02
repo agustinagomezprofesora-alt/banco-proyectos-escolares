@@ -1,11 +1,12 @@
 import { Router } from 'express'
-import { listProjects, getProject, createProject, updateProject, deleteProject, generateFicha, submitForReview, getPublishedProjects, getPublishedProject, duplicateProject, publishProject, archiveProject } from '../controllers/projectController'
+import { listProjects, getProject, createProject, updateProject, deleteProject, generateFicha, submitForReview, getPublishedProjects, getPublishedProject, duplicateProject, publishProject, archiveProject, downloadProjectPdf } from '../controllers/projectController'
 
 const router = Router()
 
 router.get('/published', getPublishedProjects)
 router.get('/published/:id', getPublishedProject)
 router.get('/', listProjects)
+router.get('/:id/pdf', downloadProjectPdf)
 router.get('/:id', getProject)
 router.post('/', createProject)
 router.put('/:id', updateProject)

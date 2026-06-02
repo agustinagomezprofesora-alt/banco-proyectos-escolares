@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchProjects, fetchStats } from '../api/api'
 import { Project, ProjectStats } from '../types'
-
-const isReview = (status: string) => ['En revisión', 'En revision', 'En revisiÃ³n'].includes(status)
+import { getErrorMessage, isReviewStatus } from '../utils/ui'
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate()
@@ -18,11 +17,11 @@ export default function AdminDashboardPage() {
         setStats(statsData)
         setProjects(projectsData)
       })
-      .catch((err: any) => setError(err?.message || 'No se pudo cargar la administración'))
+      .catch((err: any) => setError(getErrorMessage(err, 'No se pudo cargar la administración.')))
       .finally(() => setLoading(false))
   }, [])
 
-  const pendingProjects = useMemo(() => projects.filter((project) => isReview(project.status)), [projects])
+  const pendingProjects = useMemo(() => projects.filter((project) => isReviewStatus(project.status)), [projects])
 
   if (loading) return <div className="container"><p>Cargando administración...</p></div>
 
@@ -33,9 +32,7 @@ export default function AdminDashboardPage() {
           <h1>Administración</h1>
           <p>Revisión, publicación y seguimiento del banco institucional.</p>
         </div>
-        <div>
-          <button className="primary-btn" onClick={() => navigate('/admin/projects')}>Gestionar proyectos</button>
-        </div>
+        <button className="primary-btn" onClick={() => navigate('/admin/projects')}>Gestionar proyectos</button>
       </header>
 
       {error && <div className="error">{error}</div>}

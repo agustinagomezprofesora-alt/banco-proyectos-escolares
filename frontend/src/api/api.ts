@@ -1,8 +1,13 @@
-import { User, Project, ProjectStats } from '../types'
+import { Project, ProjectStats } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
 
 const getToken = () => localStorage.getItem('memoria_token')
+
+const clearSession = () => {
+  localStorage.removeItem('memoria_token')
+  localStorage.removeItem('memoria_user')
+}
 
 const buildHeaders = (includeAuth = true) => {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -13,39 +18,71 @@ const buildHeaders = (includeAuth = true) => {
   return headers
 }
 
-const handleResponse = async (response: Response) => {
-  const text = await response.text()
+const friendlyMessage = (message?: string) => {
+  if (!message) return 'Ocurrió un error inesperado.'
+  if (message.includes('Failed to fetch') || message.includes('NetworkError')) return 'No se pudo conectar con el servidor.'
+  if (message.includes('Invalid') || message.includes('expired') || message.includes('Authorization')) {
+    return 'La sesión expiró. Iniciá sesión nuevamente.'
+  }
+  if (message.includes('permiso') || message.includes('permisos')) return 'No tenés permisos para realizar esta acción.'
+  if (message.includes('Error interno')) return 'No se pudo completar la acción. Intentá nuevamente.'
+  return message
+}
+
+const request = async <T>(path: string, options: RequestInit = {}, includeAuth = true): Promise<T> => {
   try {
-    const payload = text ? JSON.parse(text) : {}
-    if (!response.ok) {
-      throw payload
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: { ...buildHeaders(includeAuth), ...((options.headers || {}) as Record<string, string>) }
+    })
+    const text = await response.text()
+    let payload: any = {}
+    if (text) {
+      try {
+        payload = JSON.parse(text)
+      } catch {
+        payload = { message: text }
+      }
     }
-    return payload
-  } catch (error) {
-    throw error
+
+    if (!response.ok) {
+      if (response.status === 401 && includeAuth) {
+        clearSession()
+        sessionStorage.setItem('memoria_session_message', 'La sesión expiró. Iniciá sesión nuevamente.')
+        if (window.location.pathname !== '/login') {
+          window.location.assign('/login')
+        }
+      }
+      throw { ...payload, message: friendlyMessage(payload?.message) }
+    }
+
+    return payload as T
+  } catch (error: any) {
+    if (error?.message) {
+      throw { ...error, message: friendlyMessage(error.message) }
+    }
+    throw { message: 'No se pudo conectar con el servidor.' }
   }
 }
 
 export const authRegister = (payload: { name: string; email: string; password: string }) =>
-  fetch(`${API_BASE}/auth/register`, { method: 'POST', headers: buildHeaders(false), body: JSON.stringify(payload) }).then(handleResponse)
+  request<{ user: any; token: string }>('/auth/register', { method: 'POST', body: JSON.stringify(payload) }, false)
 
 export const authLogin = (payload: { email: string; password: string }) =>
-  fetch(`${API_BASE}/auth/login`, { method: 'POST', headers: buildHeaders(false), body: JSON.stringify(payload) }).then(handleResponse)
+  request<{ user: any; token: string }>('/auth/login', { method: 'POST', body: JSON.stringify(payload) }, false)
 
-export const fetchProjects = () =>
-  fetch(`${API_BASE}/projects`, { headers: buildHeaders() }).then(handleResponse) as Promise<Project[]>
+export const fetchProjects = () => request<Project[]>('/projects')
 
-export const fetchProject = (id: number) =>
-  fetch(`${API_BASE}/projects/${id}`, { headers: buildHeaders() }).then(handleResponse) as Promise<Project>
+export const fetchProject = (id: number) => request<Project>(`/projects/${id}`)
 
-export const createProject = (payload: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'author'>) =>
-  fetch(`${API_BASE}/projects`, { method: 'POST', headers: buildHeaders(), body: JSON.stringify(payload) }).then(handleResponse)
+export const createProject = (payload: Partial<Project>) =>
+  request<Project>('/projects', { method: 'POST', body: JSON.stringify(payload) })
 
 export const updateProject = (id: number, payload: Partial<Project>) =>
-  fetch(`${API_BASE}/projects/${id}`, { method: 'PUT', headers: buildHeaders(), body: JSON.stringify(payload) }).then(handleResponse)
+  request<Project>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
 
 export const deleteProject = (id: number) =>
-  fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE', headers: buildHeaders() }).then(handleResponse)
+  request<Record<string, never>>(`/projects/${id}`, { method: 'DELETE' })
 
 export const fetchPublishedProjects = (params?: {
   search?: string
@@ -63,27 +100,63 @@ export const fetchPublishedProjects = (params?: {
   if (params?.isReusable) query.set('isReusable', params.isReusable)
   if (params?.year) query.set('year', params.year)
 
-  const url = `${API_BASE}/projects/published${query.toString() ? `?${query.toString()}` : ''}`
-  return fetch(url, { headers: buildHeaders(false) }).then(handleResponse) as Promise<Project[]>
+  return request<Project[]>(`/projects/published${query.toString() ? `?${query.toString()}` : ''}`, {}, false)
 }
 
 export const fetchPublishedProject = (id: number) =>
-  fetch(`${API_BASE}/projects/published/${id}`, { headers: buildHeaders(false) }).then(handleResponse) as Promise<Project>
+  request<Project>(`/projects/published/${id}`, {}, false)
 
 export const duplicateProject = (id: number) =>
-  fetch(`${API_BASE}/projects/${id}/duplicate`, { method: 'POST', headers: buildHeaders() }).then(handleResponse)
+  request<Project>(`/projects/${id}/duplicate`, { method: 'POST' })
 
 export const generateFicha = (id: number) =>
-  fetch(`${API_BASE}/projects/${id}/generate`, { method: 'POST', headers: buildHeaders() }).then(handleResponse)
+  request<Project>(`/projects/${id}/generate`, { method: 'POST' })
 
 export const submitProjectReview = (id: number) =>
-  fetch(`${API_BASE}/projects/${id}/submit-review`, { method: 'POST', headers: buildHeaders() }).then(handleResponse)
+  request<Project>(`/projects/${id}/submit-review`, { method: 'POST' })
 
 export const publishProject = (id: number) =>
-  fetch(`${API_BASE}/projects/${id}/publish`, { method: 'POST', headers: buildHeaders() }).then(handleResponse) as Promise<{ message: string; project: Project }>
+  request<{ message: string; project: Project }>(`/projects/${id}/publish`, { method: 'POST' })
 
 export const archiveProject = (id: number) =>
-  fetch(`${API_BASE}/projects/${id}/archive`, { method: 'POST', headers: buildHeaders() }).then(handleResponse) as Promise<{ message: string; project: Project }>
+  request<{ message: string; project: Project }>(`/projects/${id}/archive`, { method: 'POST' })
 
-export const fetchStats = () =>
-  fetch(`${API_BASE}/stats`, { headers: buildHeaders() }).then(handleResponse) as Promise<ProjectStats>
+export const fetchStats = () => request<ProjectStats>('/stats')
+
+export const downloadProjectPdf = async (id: number) => {
+  try {
+    const response = await fetch(`${API_BASE}/projects/${id}/pdf`, {
+      headers: buildHeaders()
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearSession()
+        sessionStorage.setItem('memoria_session_message', 'La sesión expiró. Iniciá sesión nuevamente.')
+        window.location.assign('/login')
+      }
+
+      const text = await response.text()
+      let payload: any = {}
+      try {
+        payload = text ? JSON.parse(text) : {}
+      } catch {
+        payload = { message: text }
+      }
+      throw { message: friendlyMessage(payload?.message || 'No se pudo descargar el PDF.') }
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `ficha-proyecto-${id}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error: any) {
+    if (error?.message) throw error
+    throw { message: 'No se pudo descargar el PDF.' }
+  }
+}

@@ -3,6 +3,7 @@ import { prisma } from '../config/prisma'
 import { projectSchema } from '../validators/projectValidator'
 import { AuthRequest } from '../middlewares/authMiddleware'
 import { generateProjectFicha } from '../services/aiService'
+import { generateProjectPdf } from '../services/pdfService'
 
 const authorSelect = {
   id: true,
@@ -56,6 +57,10 @@ const canAccessProject = (req: AuthRequest, authorId: number) => {
   return isAdmin(req) || req.user?.id === authorId
 }
 
+const canDownloadProject = (req: AuthRequest, project: { authorId: number; status: string }) => {
+  return canAccessProject(req, project.authorId) || project.status === 'Publicado'
+}
+
 const buildUpdateData = (data: Record<string, any>) => {
   const updateData: Record<string, any> = {}
 
@@ -94,6 +99,32 @@ export const getProject = async (req: AuthRequest, res: Response) => {
   }
 
   return res.json(project)
+}
+
+export const downloadProjectPdf = async (req: AuthRequest, res: Response) => {
+  const id = Number(req.params.id)
+  const project = await prisma.project.findUnique({
+    where: { id },
+    include: projectInclude
+  })
+
+  if (!project) {
+    return res.status(404).json({ message: 'Proyecto no encontrado' })
+  }
+
+  if (!canDownloadProject(req, project)) {
+    return res.status(403).json({ message: 'No tenés permisos para realizar esta acción.' })
+  }
+
+  try {
+    const pdf = await generateProjectPdf(project)
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="ficha-proyecto-${project.id}.pdf"`)
+    res.setHeader('Content-Length', pdf.length)
+    return res.send(pdf)
+  } catch (error) {
+    return res.status(500).json({ message: 'No se pudo generar el PDF.' })
+  }
 }
 
 export const getPublishedProjects = async (req: AuthRequest, res: Response) => {

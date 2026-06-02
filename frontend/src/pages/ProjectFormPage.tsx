@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createProject, fetchProject, updateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
+import { getErrorMessage } from '../utils/ui'
 
 const initialState = {
   title: '',
@@ -25,6 +26,19 @@ const initialState = {
   suggestedTags: ''
 }
 
+const fichaFields = [
+  ['improvedTitle', 'Título mejorado'],
+  ['generatedSummary', 'Resumen institucional'],
+  ['objectives', 'Objetivos'],
+  ['mainActivities', 'Actividades principales'],
+  ['resourcesUsed', 'Recursos utilizados'],
+  ['finalProducts', 'Producciones finales'],
+  ['evidenceDescription', 'Evidencias'],
+  ['reuseSuggestions', 'Sugerencias de reutilización'],
+  ['improvementSuggestions', 'Sugerencias de mejora'],
+  ['suggestedTags', 'Etiquetas sugeridas']
+] as const
+
 export default function ProjectFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -33,15 +47,16 @@ export default function ProjectFormPage() {
   const [project, setProject] = useState<any>(initialState)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const isEdit = Boolean(id)
   const isAdmin = user?.role === 'ADMIN'
   const isAdminRoute = location.pathname.startsWith('/admin')
-
   const backTo = isAdminRoute && id ? `/admin/projects/${id}` : '/projects'
 
   useEffect(() => {
     if (!id) return
     setLoading(true)
+    setError('')
     fetchProject(Number(id))
       .then((data) => {
         setProject({
@@ -66,12 +81,14 @@ export default function ProjectFormPage() {
           suggestedTags: data.suggestedTags ?? ''
         })
       })
-      .catch((err: any) => setError(err?.message || 'No se pudo cargar el proyecto'))
+      .catch((err: any) => setError(getErrorMessage(err, 'No se pudo cargar el proyecto.')))
       .finally(() => setLoading(false))
   }, [id])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setSaving(true)
+    setError('')
     try {
       if (isEdit && id) {
         await updateProject(Number(id), project)
@@ -80,112 +97,68 @@ export default function ProjectFormPage() {
       }
       navigate(isAdminRoute && id ? `/admin/projects/${id}` : '/projects')
     } catch (err: any) {
-      setError(err?.message || 'No se pudo guardar el proyecto')
+      setError(getErrorMessage(err, 'No se pudo guardar el proyecto.'))
+    } finally {
+      setSaving(false)
     }
   }
 
   return (
     <div className="container">
       <header className="header">
-        <h1>{isEdit ? 'Editar proyecto' : 'Nuevo proyecto'}</h1>
+        <div>
+          <h1>{isEdit ? 'Editar proyecto' : 'Nuevo proyecto'}</h1>
+          <p>{isAdminRoute ? 'Edición administrativa de la experiencia.' : 'Actualizá los datos de tu experiencia.'}</p>
+        </div>
         <button onClick={() => navigate(backTo)}>Volver</button>
       </header>
       {error && <div className="error">{error}</div>}
-      <form onSubmit={handleSubmit} className="form-grid">
-        <label>
-          Título
-          <input value={project.title} onChange={(e) => setProject({ ...project, title: e.target.value })} required />
-        </label>
-        <label>
-          Descripción
-          <textarea value={project.description} onChange={(e) => setProject({ ...project, description: e.target.value })} required />
-        </label>
-        <label>
-          Docente
-          <input value={project.teacher} onChange={(e) => setProject({ ...project, teacher: e.target.value })} required />
-        </label>
-        <label>
-          Curso
-          <input value={project.course} onChange={(e) => setProject({ ...project, course: e.target.value })} required />
-        </label>
-        <label>
-          Área
-          <input value={project.area} onChange={(e) => setProject({ ...project, area: e.target.value })} required />
-        </label>
-        <label>
-          Tipo de experiencia
-          <input value={project.experienceType} onChange={(e) => setProject({ ...project, experienceType: e.target.value })} required />
-        </label>
-        <label>
-          Link de evidencia
-          <input value={project.link} onChange={(e) => setProject({ ...project, link: e.target.value })} />
-        </label>
-        <label className="checkbox-label">
-          <input type="checkbox" checked={project.isReusable} onChange={(e) => setProject({ ...project, isReusable: e.target.checked })} />
-          Reutilizable
-        </label>
-
-        {isAdmin && (
-          <label>
-            Estado
-            <select value={project.status} onChange={(e) => setProject({ ...project, status: e.target.value })}>
-              <option value="Cargado">Cargado</option>
-              <option value="Borrador generado">Borrador generado</option>
-              <option value="En revisión">En revisión</option>
-              <option value="Publicado">Publicado</option>
-              <option value="Archivado">Archivado</option>
-            </select>
+      {loading ? <p>Cargando proyecto...</p> : (
+        <form onSubmit={handleSubmit} className="form-grid">
+          <label>Título<input value={project.title} onChange={(e) => setProject({ ...project, title: e.target.value })} required /></label>
+          <label>Descripción<textarea value={project.description} onChange={(e) => setProject({ ...project, description: e.target.value })} required /></label>
+          <label>Docente<input value={project.teacher} onChange={(e) => setProject({ ...project, teacher: e.target.value })} required /></label>
+          <label>Curso<input value={project.course} onChange={(e) => setProject({ ...project, course: e.target.value })} required /></label>
+          <label>Área<input value={project.area} onChange={(e) => setProject({ ...project, area: e.target.value })} required /></label>
+          <label>Tipo de experiencia<input value={project.experienceType} onChange={(e) => setProject({ ...project, experienceType: e.target.value })} required /></label>
+          <label>Link de evidencia<input value={project.link} onChange={(e) => setProject({ ...project, link: e.target.value })} /></label>
+          <label className="checkbox-label">
+            <input type="checkbox" checked={project.isReusable} onChange={(e) => setProject({ ...project, isReusable: e.target.checked })} />
+            Reutilizable
           </label>
-        )}
 
-        {isAdmin && isEdit && (
-          <fieldset className="admin-fieldset">
-            <legend>Campos generados de la ficha</legend>
+          {isAdmin && (
             <label>
-              Título mejorado
-              <input value={project.improvedTitle || ''} onChange={(e) => setProject({ ...project, improvedTitle: e.target.value })} />
+              Estado
+              <select value={project.status} onChange={(e) => setProject({ ...project, status: e.target.value })}>
+                <option value="Cargado">Cargado</option>
+                <option value="Borrador generado">Borrador generado</option>
+                <option value="En revisión">En revisión</option>
+                <option value="Publicado">Publicado</option>
+                <option value="Archivado">Archivado</option>
+              </select>
             </label>
-            <label>
-              Resumen institucional
-              <textarea value={project.generatedSummary || ''} onChange={(e) => setProject({ ...project, generatedSummary: e.target.value })} />
-            </label>
-            <label>
-              Objetivos
-              <textarea value={project.objectives || ''} onChange={(e) => setProject({ ...project, objectives: e.target.value })} />
-            </label>
-            <label>
-              Actividades principales
-              <textarea value={project.mainActivities || ''} onChange={(e) => setProject({ ...project, mainActivities: e.target.value })} />
-            </label>
-            <label>
-              Recursos utilizados
-              <textarea value={project.resourcesUsed || ''} onChange={(e) => setProject({ ...project, resourcesUsed: e.target.value })} />
-            </label>
-            <label>
-              Producciones finales
-              <textarea value={project.finalProducts || ''} onChange={(e) => setProject({ ...project, finalProducts: e.target.value })} />
-            </label>
-            <label>
-              Evidencias
-              <textarea value={project.evidenceDescription || ''} onChange={(e) => setProject({ ...project, evidenceDescription: e.target.value })} />
-            </label>
-            <label>
-              Sugerencias de reutilización
-              <textarea value={project.reuseSuggestions || ''} onChange={(e) => setProject({ ...project, reuseSuggestions: e.target.value })} />
-            </label>
-            <label>
-              Sugerencias de mejora
-              <textarea value={project.improvementSuggestions || ''} onChange={(e) => setProject({ ...project, improvementSuggestions: e.target.value })} />
-            </label>
-            <label>
-              Etiquetas sugeridas
-              <input value={project.suggestedTags || ''} onChange={(e) => setProject({ ...project, suggestedTags: e.target.value })} />
-            </label>
-          </fieldset>
-        )}
+          )}
 
-        <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Guardar proyecto'}</button>
-      </form>
+          {isAdmin && isEdit && (
+            <fieldset className="admin-fieldset">
+              <legend>Campos generados de la ficha</legend>
+              {fichaFields.map(([key, label]) => (
+                <label key={key}>
+                  {label}
+                  {key === 'improvedTitle' || key === 'suggestedTags' ? (
+                    <input value={project[key] || ''} onChange={(e) => setProject({ ...project, [key]: e.target.value })} />
+                  ) : (
+                    <textarea value={project[key] || ''} onChange={(e) => setProject({ ...project, [key]: e.target.value })} />
+                  )}
+                </label>
+              ))}
+            </fieldset>
+          )}
+
+          <button type="submit" disabled={saving}>{saving ? 'Guardando cambios...' : 'Guardar proyecto'}</button>
+        </form>
+      )}
     </div>
   )
 }

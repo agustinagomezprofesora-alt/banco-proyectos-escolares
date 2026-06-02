@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { fetchPublishedProjects } from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import { Project } from '../types'
+import { getErrorMessage } from '../utils/ui'
 
 export default function BankPage() {
   const { user } = useAuth()
@@ -17,6 +18,8 @@ export default function BankPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const hasFilters = Boolean(search || area !== 'all' || course !== 'all' || experienceType !== 'all' || isReusable !== 'all' || year !== 'all')
+
   const loadProjects = async () => {
     setLoading(true)
     setError('')
@@ -24,7 +27,7 @@ export default function BankPage() {
       const data = await fetchPublishedProjects({ search, area, course, experienceType, isReusable, year })
       setProjects(data)
     } catch (err: any) {
-      setError(err?.message || 'No se pudieron cargar los proyectos publicados')
+      setError(getErrorMessage(err, 'No se pudieron cargar los proyectos.'))
     } finally {
       setLoading(false)
     }
@@ -32,23 +35,13 @@ export default function BankPage() {
 
   useEffect(() => {
     loadProjects()
-  }, [search, area, course, experienceType, isReusable, year])
+  }, [area, course, experienceType, isReusable, year])
 
   const areas = useMemo(() => Array.from(new Set(projects.map((project) => project.area))).sort(), [projects])
   const courses = useMemo(() => Array.from(new Set(projects.map((project) => project.course))).sort(), [projects])
-  const experienceTypes = useMemo(
-    () => Array.from(new Set(projects.map((project) => project.experienceType))).sort(),
-    [projects]
-  )
+  const experienceTypes = useMemo(() => Array.from(new Set(projects.map((project) => project.experienceType))).sort(), [projects])
   const years = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          projects
-            .map((project) => new Date(project.createdAt).getFullYear().toString())
-            .filter(Boolean)
-        )
-      ).sort(),
+    () => Array.from(new Set(projects.map((project) => new Date(project.createdAt).getFullYear().toString()))).sort(),
     [projects]
   )
 
@@ -57,13 +50,9 @@ export default function BankPage() {
       <header className="header">
         <div>
           <h1>Banco de proyectos</h1>
-          <p>Explora proyectos publicados disponibles para adaptar y compartir.</p>
+          <p>Explorá proyectos publicados disponibles para adaptar y compartir.</p>
         </div>
-        {user && (
-          <button className="primary-btn" onClick={() => navigate('/projects/new')}>
-            Cargar nueva experiencia
-          </button>
-        )}
+        {user && <button className="primary-btn" onClick={() => navigate('/projects/new')}>Cargar nueva experiencia</button>}
       </header>
 
       <div className="bank-controls">
@@ -73,38 +62,30 @@ export default function BankPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por título, área, curso, docente o palabra clave"
           />
-          <button type="button" onClick={loadProjects}>Buscar</button>
+          <button type="button" onClick={loadProjects} disabled={loading}>Buscar</button>
         </div>
 
         <div className="bank-filters">
           <select value={area} onChange={(e) => setArea(e.target.value)}>
             <option value="all">Todas las áreas</option>
-            {areas.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
+            {areas.map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
           <select value={course} onChange={(e) => setCourse(e.target.value)}>
             <option value="all">Todos los cursos</option>
-            {courses.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
+            {courses.map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
           <select value={experienceType} onChange={(e) => setExperienceType(e.target.value)}>
             <option value="all">Todos los tipos</option>
-            {experienceTypes.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
+            {experienceTypes.map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
           <select value={isReusable} onChange={(e) => setIsReusable(e.target.value)}>
-            <option value="all">Todos los estados de reutilización</option>
+            <option value="all">Todos los estados</option>
             <option value="true">Reutilizable</option>
             <option value="false">No reutilizable</option>
           </select>
           <select value={year} onChange={(e) => setYear(e.target.value)}>
             <option value="all">Todos los años</option>
-            {years.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
+            {years.map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
         </div>
       </div>
@@ -112,15 +93,11 @@ export default function BankPage() {
       {error && <div className="error">{error}</div>}
 
       {loading ? (
-        <p>Cargando proyectos publicados...</p>
+        <p>Cargando proyectos...</p>
       ) : projects.length === 0 ? (
         <div className="empty-state">
-          <p>Todavía no hay proyectos publicados en el banco institucional.</p>
-          {user && (
-            <button className="primary-btn" onClick={() => navigate('/projects/new')}>
-              Cargar nueva experiencia
-            </button>
-          )}
+          <p>{hasFilters ? 'No se encontraron proyectos con esos filtros.' : 'Todavía no hay proyectos en esta sección.'}</p>
+          {user && <button className="primary-btn" onClick={() => navigate('/projects/new')}>Cargar nueva experiencia</button>}
         </div>
       ) : (
         <div className="bank-grid">
@@ -130,16 +107,14 @@ export default function BankPage() {
                 <h2>{project.improvedTitle || project.title}</h2>
                 <span className="badge badge-publicado">Publicado</span>
               </div>
+              <p>{project.generatedSummary || project.description}</p>
               <div className="bank-card-meta">
                 <span>{project.area}</span>
                 <span>{project.course}</span>
                 <span>{project.experienceType}</span>
-              </div>
-              <p>{project.generatedSummary || project.description}</p>
-              <div className="bank-card-status">
                 <span>{project.isReusable ? 'Reutilizable' : 'No reutilizable'}</span>
               </div>
-              <button onClick={() => navigate(`/bank/${project.id}`)}>Ver ficha</button>
+              <button className="primary-btn" onClick={() => navigate(`/bank/${project.id}`)}>Ver ficha</button>
             </article>
           ))}
         </div>

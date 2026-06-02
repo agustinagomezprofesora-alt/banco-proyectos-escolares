@@ -774,3 +774,322 @@ button.btn-delete:hover:not(:disabled) {
   padding: 0 8px;
 }
 
+/* Phase 5 polish */
+.auth-container {
+  max-width: 520px;
+}
+
+.main-nav {
+  align-items: center;
+}
+
+.nav-links a.active {
+  color: #047857;
+}
+
+.user-chip {
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+button,
+input,
+textarea,
+select,
+.card,
+.project-card,
+.bank-card,
+.detail-section,
+.ficha-view,
+.empty-state,
+.admin-section,
+.admin-row,
+.admin-project-card,
+.card-stat,
+form,
+.form-steps {
+  border-radius: 8px;
+}
+
+button {
+  min-height: 42px;
+}
+
+button:not(.primary-btn):not(.btn-generate):not(.btn-view):not(.btn-edit):not(.btn-delete) {
+  background: #334155;
+}
+
+button:not(.primary-btn):not(.btn-generate):not(.btn-view):not(.btn-edit):not(.btn-delete):hover:not(:disabled) {
+  background: #1f2937;
+}
+
+.project-card,
+.bank-card,
+.admin-project-card,
+.detail-section,
+.ficha-view,
+.admin-section {
+  border: 1px solid #e5e7eb;
+}
+
+.project-header,
+.bank-card-header {
+  align-items: flex-start;
+}
+
+.project-description,
+.bank-card p {
+  overflow-wrap: anywhere;
+}
+
+.badge {
+  border-radius: 999px;
+}
+
+.badge-en-revisiÃ³n,
+.badge-en-revisión,
+.badge-en-revision {
+  background: #ddd6fe;
+  color: #4c1d95;
+}
+
+.error,
+.success {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.bank-card button,
+.project-actions button {
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 14px;
+  }
+
+  .container {
+    padding: 14px;
+  }
+
+  header.header {
+    align-items: stretch;
+  }
+
+  header.header,
+  .bank-card-header,
+  .project-header,
+  .admin-row {
+    flex-direction: column;
+  }
+
+  header.header > div:last-child,
+  .project-actions,
+  .button-group {
+    width: 100%;
+  }
+
+  header.header button,
+  .project-actions button,
+  .button-group button,
+  .admin-actions-grid button {
+    width: 100%;
+  }
+
+  .main-nav {
+    position: static;
+    align-items: stretch;
+  }
+
+  .nav-links,
+  .nav-auth {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .nav-links a,
+  .nav-auth a,
+  .nav-auth button,
+  .user-chip {
+    width: 100%;
+    text-align: center;
+  }
+
+  .quick-access,
+  .bank-filters,
+  .admin-project-grid,
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Admin project management button contrast fix */
+.admin-page .filters button {
+  background: #e2e8f0;
+  color: #1e293b;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  padding: 10px 16px;
+}
+
+.admin-page .filters button:hover:not(:disabled) {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+.admin-page .filters button.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.admin-page .filters button.active:hover:not(:disabled) {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.admin-page header.header button:not(.primary-btn):not(.btn-generate):not(.btn-view):not(.btn-edit):not(.btn-delete),
+.admin-page .project-actions button:not(.primary-btn):not(.btn-generate):not(.btn-view):not(.btn-edit):not(.btn-delete) {
+  background: #e2e8f0;
+  color: #1e293b;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+}
+
+.admin-page header.header button:not(.primary-btn):not(.btn-generate):not(.btn-view):not(.btn-edit):not(.btn-delete):hover:not(:disabled),
+.admin-page .project-actions button:not(.primary-btn):not(.btn-generate):not(.btn-view):not(.btn-edit):not(.btn-delete):hover:not(:disabled) {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+.admin-page .project-actions .primary-btn {
+  background: #059669;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.admin-page .project-actions .primary-btn:hover:not(:disabled) {
+  background: #047857;
+}
+
+.admin-page .project-actions .btn-edit {
+  background: #0891b2;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.admin-page .project-actions .btn-edit:hover:not(:disabled) {
+  background: #0e7490;
+}
+
+.admin-page .project-actions .btn-view {
+  background: #7c3aed;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.admin-page .project-actions .btn-view:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+.admin-page .project-actions .btn-delete {
+  background: #dc2626;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.admin-page .project-actions .btn-delete:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+/* Global filter and action button contrast fix */
+.filters button,
+.admin-page .filters button {
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  padding: 10px 16px;
+  opacity: 1;
+}
+
+.filters button:hover:not(:disabled),
+.admin-page .filters button:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.filters button.active,
+.admin-page .filters button.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.filters button.active:hover:not(:disabled),
+.admin-page .filters button.active:hover:not(:disabled) {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.filters button:disabled,
+.project-actions button:disabled {
+  opacity: 0.65;
+}
+
+.project-actions button:not(.primary-btn):not(.btn-generate):not(.btn-view):not(.btn-edit):not(.btn-delete) {
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+}
+
+.project-actions button:not(.primary-btn):not(.btn-generate):not(.btn-view):not(.btn-edit):not(.btn-delete):hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.project-actions .primary-btn,
+.project-actions .btn-generate,
+.project-actions .btn-view,
+.project-actions .btn-edit,
+.project-actions .btn-delete {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.filters .filter-button {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 10px 16px !important;
+  opacity: 1 !important;
+}
+
+.filters .filter-button-inactive {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.filters .filter-button-inactive:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+.filters .filter-button-active {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+}
+
+.filters .filter-button-active:hover:not(:disabled) {
+  background: #1e293b !important;
+  color: #ffffff !important;
+}
+

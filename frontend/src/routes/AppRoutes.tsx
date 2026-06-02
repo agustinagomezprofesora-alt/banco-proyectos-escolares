@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LoginPage from '../pages/LoginPage'
 import RegisterPage from '../pages/RegisterPage'
@@ -15,19 +15,20 @@ import MainLayout from '../components/MainLayout'
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth()
-  if (loading) return <div className="p-6">Cargando...</div>
+  if (loading) return <div className="container"><p>Cargando...</p></div>
   return user ? children : <Navigate to="/login" replace />
 }
 
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth()
-  if (loading) return <div className="p-6">Cargando...</div>
+  const navigate = useNavigate()
+  if (loading) return <div className="container"><p>Cargando...</p></div>
   if (!user) return <Navigate to="/login" replace />
   if (user.role !== 'ADMIN') {
     return (
       <div className="container">
         <div className="error">No tenés permisos para acceder a esta sección.</div>
-        <button onClick={() => window.location.assign('/projects')}>Volver al dashboard</button>
+        <button onClick={() => navigate('/projects')}>Volver al dashboard</button>
       </div>
     )
   }
@@ -40,12 +41,15 @@ export default function AppRoutes() {
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<Navigate to="/projects" replace />} />
+          <Route path="/dashboard" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
           <Route path="/bank" element={<BankPage />} />
           <Route path="/bank/:id" element={<BankProjectDetailPage />} />
           <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
           <Route path="/projects/new" element={<ProtectedRoute><NewProjectPage /></ProtectedRoute>} />
+          <Route path="/projects/:id" element={<ProtectedRoute><ViewFichaPage /></ProtectedRoute>} />
           <Route path="/projects/:id/edit" element={<ProtectedRoute><ProjectFormPage /></ProtectedRoute>} />
           <Route path="/projects/:id/ficha" element={<ProtectedRoute><ViewFichaPage /></ProtectedRoute>} />
+          <Route path="/projects/:id/generated" element={<ProtectedRoute><ViewFichaPage /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
           <Route path="/admin/projects" element={<AdminRoute><AdminProjectsPage /></AdminRoute>} />
           <Route path="/admin/projects/:id" element={<AdminRoute><AdminProjectDetailPage /></AdminRoute>} />
