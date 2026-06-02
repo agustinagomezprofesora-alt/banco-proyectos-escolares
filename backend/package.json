@@ -9,7 +9,9 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "backup": "tsx scripts/backup.ts",
+    "check": "prisma generate && tsc --noEmit"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -20,6 +22,7 @@
     "dotenv": "^16.3.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1",
     "pdfkit": "^0.17.2",
     "zod": "^3.22.2"
   },
@@ -29,6 +32,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.1",
+    "@types/multer": "^2.1.0",
     "@types/node": "^25.9.1",
     "@types/pdfkit": "^0.17.6",
     "prisma": "^4.16.2",

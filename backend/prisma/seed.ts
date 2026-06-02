@@ -69,6 +69,18 @@ async function main() {
     })
   }
 
+  const existingSettings = await (prisma as any).institutionSettings.findFirst()
+  if (!existingSettings) {
+    await (prisma as any).institutionSettings.create({
+      data: {
+        institutionName: 'Escuela / Institución',
+        appName: 'Memoria Pedagógica Digital',
+        footerText: 'Ficha generada por Memoria Pedagógica Digital',
+        allowPublicBank: false
+      }
+    })
+  }
+
   console.log('Seed ejecutado correctamente.')
   console.log('Usuario admin: admin@escuela.local / admin123456')
   console.log('Usuario docente: docente@escuela.local / docente123456')

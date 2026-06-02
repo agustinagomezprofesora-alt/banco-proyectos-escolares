@@ -1,13 +1,13 @@
 -- AlterTable
-ALTER TABLE "Project" ADD COLUMN "improvedTitle" TEXT,
-ADD COLUMN "generatedSummary" TEXT,
-ADD COLUMN "objectives" TEXT,
-ADD COLUMN "mainActivities" TEXT,
-ADD COLUMN "resourcesUsed" TEXT,
-ADD COLUMN "finalProducts" TEXT,
-ADD COLUMN "evidenceDescription" TEXT,
-ADD COLUMN "reuseSuggestions" TEXT,
-ADD COLUMN "improvementSuggestions" TEXT,
-ADD COLUMN "suggestedTags" TEXT,
-ADD COLUMN "observations" TEXT,
-ADD COLUMN "additionalLink" TEXT;
+ALTER TABLE "Project" ADD COLUMN "improvedTitle" TEXT;
+ALTER TABLE "Project" ADD COLUMN "generatedSummary" TEXT;
+ALTER TABLE "Project" ADD COLUMN "objectives" TEXT;
+ALTER TABLE "Project" ADD COLUMN "mainActivities" TEXT;
+ALTER TABLE "Project" ADD COLUMN "resourcesUsed" TEXT;
+ALTER TABLE "Project" ADD COLUMN "finalProducts" TEXT;
+ALTER TABLE "Project" ADD COLUMN "evidenceDescription" TEXT;
+ALTER TABLE "Project" ADD COLUMN "reuseSuggestions" TEXT;
+ALTER TABLE "Project" ADD COLUMN "improvementSuggestions" TEXT;
+ALTER TABLE "Project" ADD COLUMN "suggestedTags" TEXT;
+ALTER TABLE "Project" ADD COLUMN "observations" TEXT;
+ALTER TABLE "Project" ADD COLUMN "additionalLink" TEXT;

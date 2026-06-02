@@ -11,6 +11,7 @@ import BankProjectDetailPage from '../pages/BankProjectDetailPage'
 import AdminDashboardPage from '../pages/AdminDashboardPage'
 import AdminProjectsPage from '../pages/AdminProjectsPage'
 import AdminProjectDetailPage from '../pages/AdminProjectDetailPage'
+import AdminSettingsPage from '../pages/AdminSettingsPage'
 import MainLayout from '../components/MainLayout'
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -27,7 +28,7 @@ const AdminRoute = ({ children }: { children: JSX.Element }) => {
   if (user.role !== 'ADMIN') {
     return (
       <div className="container">
-        <div className="error">No tenés permisos para acceder a esta sección.</div>
+        <div className="error">Solo administradores pueden modificar esta sección.</div>
         <button onClick={() => navigate('/projects')}>Volver al dashboard</button>
       </div>
     )
@@ -54,6 +55,7 @@ export default function AppRoutes() {
           <Route path="/admin/projects" element={<AdminRoute><AdminProjectsPage /></AdminRoute>} />
           <Route path="/admin/projects/:id" element={<AdminRoute><AdminProjectDetailPage /></AdminRoute>} />
           <Route path="/admin/projects/:id/edit" element={<AdminRoute><ProjectFormPage /></AdminRoute>} />
+          <Route path="/admin/settings" element={<AdminRoute><AdminSettingsPage /></AdminRoute>} />
         </Route>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

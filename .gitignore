@@ -6,3 +6,8 @@ build
 .next
 .vite
 .DS_Store
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/prisma/*.db-journal
+backend/backups/*.db
+backend/dev-server.*.log

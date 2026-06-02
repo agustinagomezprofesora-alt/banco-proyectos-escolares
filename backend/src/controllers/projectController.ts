@@ -13,7 +13,9 @@ const authorSelect = {
 } as const
 
 const projectInclude = {
-  author: { select: authorSelect }
+  author: { select: authorSelect },
+  links: true,
+  files: true
 } as const
 
 const fichaFields = [
@@ -117,7 +119,8 @@ export const downloadProjectPdf = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const pdf = await generateProjectPdf(project)
+    const settings = await (prisma as any).institutionSettings.findFirst({ orderBy: { id: 'asc' } })
+    const pdf = await generateProjectPdf(project, settings)
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `attachment; filename="ficha-proyecto-${project.id}.pdf"`)
     res.setHeader('Content-Length', pdf.length)

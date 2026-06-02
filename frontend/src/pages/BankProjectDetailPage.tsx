@@ -4,6 +4,7 @@ import { downloadProjectPdf, fetchPublishedProject, duplicateProject } from '../
 import { useAuth } from '../context/AuthContext'
 import { Project } from '../types'
 import { getErrorMessage } from '../utils/ui'
+import EvidenceSection from '../components/EvidenceSection'
 
 export default function BankProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -136,6 +137,13 @@ export default function BankProjectDetailPage() {
           </div>
         </section>
       )}
+
+      <EvidenceSection
+        projectId={project.id}
+        initialLinks={project.links}
+        initialFiles={project.files}
+        canEdit={false}
+      />
     </div>
   )
 }

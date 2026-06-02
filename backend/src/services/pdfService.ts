@@ -22,6 +22,20 @@ type PdfProject = {
   reuseSuggestions?: string | null
   improvementSuggestions?: string | null
   suggestedTags?: string | null
+  links?: Array<{ label: string; url: string }>
+  files?: Array<{ originalName: string; url?: string | null }>
+}
+
+type PdfSettings = {
+  institutionName?: string | null
+  appName?: string | null
+  footerText?: string | null
+}
+
+const defaultPdfSettings = {
+  institutionName: 'Escuela / Institución',
+  appName: 'Memoria Pedagógica Digital',
+  footerText: 'Ficha generada por Memoria Pedagógica Digital'
 }
 
 function hasValue(input: unknown) {
@@ -50,6 +64,8 @@ const formatDate = (input: unknown) => {
 }
 
 const safeText = (input: unknown) => formatValue(input).replace(/\s+/g, ' ').trim()
+
+const formatEvidenceList = (items: string[]) => items.filter((item) => item.trim() !== '').join('\n')
 
 const addLabel = (doc: any, label: string, content: unknown, width: number) => {
   doc
@@ -80,15 +96,21 @@ const addSection = (doc: any, title: string, content: unknown, width: number) =>
     .text(formatValue(content), { width, align: 'left', lineGap: 3 })
 }
 
-export const generateProjectPdf = async (project: PdfProject): Promise<Buffer> => {
+export const generateProjectPdf = async (project: PdfProject, settings?: PdfSettings | null): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
+    const pdfSettings = {
+      institutionName: settings?.institutionName || defaultPdfSettings.institutionName,
+      appName: settings?.appName || defaultPdfSettings.appName,
+      footerText: settings?.footerText || defaultPdfSettings.footerText
+    }
+
     const doc = new PDFDocument({
       margin: 50,
       size: 'A4',
       bufferPages: true,
       info: {
         Title: `Ficha proyecto ${project.id}`,
-        Author: 'Memoria Pedagógica Digital',
+        Author: pdfSettings.appName,
         Subject: safeText(project.title)
       }
     })
@@ -106,12 +128,12 @@ export const generateProjectPdf = async (project: PdfProject): Promise<Buffer> =
       .font('Helvetica-Bold')
       .fontSize(18)
       .fillColor('#0f172a')
-      .text('Memoria Pedagógica Digital', { width: contentWidth })
+      .text(pdfSettings.appName, { width: contentWidth })
     doc
       .font('Helvetica')
       .fontSize(10)
       .fillColor('#475569')
-      .text('Escuela / Institución', { width: contentWidth })
+      .text(pdfSettings.institutionName, { width: contentWidth })
       .text(`Fecha de generación: ${new Date().toLocaleDateString('es-AR')}`, { width: contentWidth })
 
     doc.moveDown(0.8)
@@ -180,6 +202,22 @@ export const generateProjectPdf = async (project: PdfProject): Promise<Buffer> =
       visibleSections.forEach(([title, content]) => addSection(doc, title, content, contentWidth))
     }
 
+    const evidenceItems = [
+      ...(project.links ?? []).map((link) => `${link.label}: ${link.url}`),
+      ...(project.files ?? []).map((file) => `${file.originalName}${file.url ? ` - ${file.url}` : ''}`)
+    ]
+    const evidenceText = formatEvidenceList(evidenceItems)
+
+    if (hasValue(evidenceText)) {
+      doc.moveDown(0.8)
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(13)
+        .fillColor('#0f172a')
+        .text('Evidencias y recursos', { width: contentWidth })
+      addSection(doc, 'Links y archivos adjuntos', evidenceText, contentWidth)
+    }
+
     const range = doc.bufferedPageRange()
     for (let i = range.start; i < range.start + range.count; i += 1) {
       doc.switchToPage(i)
@@ -194,7 +232,7 @@ export const generateProjectPdf = async (project: PdfProject): Promise<Buffer> =
         .font('Helvetica')
         .fontSize(8)
         .fillColor('#666')
-        .text('Ficha generada por Memoria Pedagógica Digital', footerLeft, footerY, {
+        .text(pdfSettings.footerText, footerLeft, footerY, {
           width: footerWidth,
           align: 'left',
           lineBreak: false

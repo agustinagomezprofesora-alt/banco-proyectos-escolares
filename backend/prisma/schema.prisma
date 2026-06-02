@@ -48,4 +48,42 @@ model Project {
   suggestedTags             String?
   observations              String?
   additionalLink            String?
+
+  links                     ProjectLink[]
+  files                     ProjectFile[]
+}
+
+model ProjectLink {
+  id        Int      @id @default(autoincrement())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId Int
+  label     String
+  url       String
+  createdAt DateTime @default(now())
+}
+
+model ProjectFile {
+  id           Int      @id @default(autoincrement())
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    Int
+  originalName String
+  storedName   String
+  mimeType     String
+  size         Int
+  url          String
+  createdAt    DateTime @default(now())
+}
+
+model InstitutionSettings {
+  id              Int      @id @default(autoincrement())
+  institutionName String
+  appName         String
+  logoUrl         String?
+  primaryColor    String?
+  secondaryColor  String?
+  contactEmail    String?
+  footerText      String?
+  allowPublicBank Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

@@ -4,6 +4,7 @@ import { downloadProjectPdf, fetchProject, submitProjectReview, updateProject } 
 import { useAuth } from '../context/AuthContext'
 import { Project } from '../types'
 import { getErrorMessage, getStatusBadgeClass, normalizeStatus } from '../utils/ui'
+import EvidenceSection from '../components/EvidenceSection'
 
 const fichaFields: Array<{ key: keyof Project; title: string }> = [
   { key: 'generatedSummary', title: 'Resumen institucional' },
@@ -95,6 +96,8 @@ export default function ViewFichaPage() {
     return <div className="container"><div className="error">No tenés permisos para acceder a esta sección.</div></div>
   }
 
+  const canManageEvidence = user?.role === 'ADMIN' || (user?.id === project.author.id && project.status !== 'Archivado')
+
   return (
     <div className="container">
       <header className="header">
@@ -161,6 +164,13 @@ export default function ViewFichaPage() {
               </div>
             </section>
           )}
+
+          <EvidenceSection
+            projectId={project.id}
+            initialLinks={project.links}
+            initialFiles={project.files}
+            canEdit={canManageEvidence}
+          />
 
           {project.status === 'Borrador generado' && (
             <div className="button-group">

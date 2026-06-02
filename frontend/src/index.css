@@ -3,6 +3,8 @@
   font-family: Inter, system-ui, sans-serif;
   background: #f5f7fb;
   color: #111827;
+  --institution-primary: #0f172a;
+  --institution-secondary: #059669;
 }
 
 * {
@@ -96,7 +98,7 @@ textarea {
 
 button {
   border: none;
-  background: #0f172a;
+  background: var(--institution-primary);
   color: white;
   padding: 12px 18px;
   border-radius: 12px;
@@ -114,7 +116,7 @@ button:disabled {
 }
 
 button.primary-btn {
-  background: #059669;
+  background: var(--institution-secondary);
 }
 
 button.primary-btn:hover:not(:disabled) {
@@ -282,12 +284,23 @@ button.btn-delete:hover:not(:disabled) {
 .nav-brand {
   display: flex;
   align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .nav-title {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--institution-primary);
   text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.nav-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #ffffff;
 }
 
 .nav-links,
@@ -317,6 +330,18 @@ button.btn-delete:hover:not(:disabled) {
 
 .page-container {
   padding: 24px;
+}
+
+.app-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 18px 24px;
+  color: #64748b;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 0.9rem;
 }
 
 .bank-controls {
@@ -774,9 +799,130 @@ button.btn-delete:hover:not(:disabled) {
   padding: 0 8px;
 }
 
+.muted-text {
+  color: #64748b;
+  margin: 0;
+}
+
+.evidence-section {
+  display: grid;
+  gap: 16px;
+}
+
+.evidence-list {
+  display: grid;
+  gap: 10px;
+}
+
+.evidence-list h3,
+.evidence-form h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.evidence-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.evidence-item div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.evidence-item a,
+.evidence-item span {
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+.evidence-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #334155;
+  color: #ffffff !important;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.button-link:hover {
+  background: #1f2937;
+}
+
+.evidence-forms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.evidence-form {
+  display: grid;
+  gap: 12px;
+  background: #ffffff;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
 /* Phase 5 polish */
 .auth-container {
   max-width: 520px;
+}
+
+.auth-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.auth-heading img {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.auth-heading p {
+  margin: 0 0 4px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.settings-form {
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.settings-form input[type='color'] {
+  min-height: 46px;
+  padding: 5px;
 }
 
 .main-nav {
@@ -784,7 +930,7 @@ button.btn-delete:hover:not(:disabled) {
 }
 
 .nav-links a.active {
-  color: #047857;
+  color: var(--institution-secondary);
 }
 
 .user-chip {
@@ -921,11 +1067,27 @@ button:not(.primary-btn):not(.btn-generate):not(.btn-view):not(.btn-edit):not(.b
     text-align: center;
   }
 
+  .app-footer {
+    flex-direction: column;
+    text-align: center;
+  }
+
   .quick-access,
   .bank-filters,
   .admin-project-grid,
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .evidence-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .evidence-actions,
+  .evidence-actions button,
+  .evidence-actions .button-link {
+    width: 100%;
   }
 }
 

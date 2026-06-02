@@ -1,4 +1,4 @@
-import { Project, ProjectStats } from '../types'
+import { InstitutionSettings, Project, ProjectFile, ProjectLink, ProjectStats } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
 
@@ -13,6 +13,15 @@ const buildHeaders = (includeAuth = true) => {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   const token = getToken()
   if (includeAuth && token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+  return headers
+}
+
+const buildAuthHeaders = () => {
+  const headers: Record<string, string> = {}
+  const token = getToken()
+  if (token) {
     headers.Authorization = `Bearer ${token}`
   }
   return headers
@@ -122,6 +131,69 @@ export const archiveProject = (id: number) =>
   request<{ message: string; project: Project }>(`/projects/${id}/archive`, { method: 'POST' })
 
 export const fetchStats = () => request<ProjectStats>('/stats')
+
+export const fetchSettings = () => request<InstitutionSettings>('/settings', {}, false)
+
+export const updateSettings = (payload: Partial<InstitutionSettings>) =>
+  request<InstitutionSettings>('/settings', { method: 'PUT', body: JSON.stringify(payload) })
+
+export const fetchProjectLinks = (projectId: number) =>
+  request<ProjectLink[]>(`/projects/${projectId}/links`)
+
+export const createProjectLink = (projectId: number, payload: { label: string; url: string }) =>
+  request<ProjectLink>(`/projects/${projectId}/links`, { method: 'POST', body: JSON.stringify(payload) })
+
+export const deleteProjectLink = (id: number) =>
+  request<Record<string, never>>(`/links/${id}`, { method: 'DELETE' })
+
+export const fetchProjectFiles = (projectId: number) =>
+  request<ProjectFile[]>(`/projects/${projectId}/files`)
+
+export const uploadProjectFile = async (projectId: number, file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const response = await fetch(`${API_BASE}/projects/${projectId}/files`, {
+      method: 'POST',
+      headers: buildAuthHeaders(),
+      body: formData
+    })
+
+    const text = await response.text()
+    let payload: any = {}
+    if (text) {
+      try {
+        payload = JSON.parse(text)
+      } catch {
+        payload = { message: text }
+      }
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearSession()
+        sessionStorage.setItem('memoria_session_message', 'La sesión expiró. Iniciá sesión nuevamente.')
+        window.location.assign('/login')
+      }
+
+      throw { message: friendlyMessage(payload?.message || 'No se pudo subir el archivo.') }
+    }
+
+    return payload as ProjectFile
+  } catch (error: any) {
+    if (error?.message) throw { ...error, message: friendlyMessage(error.message) }
+    throw { message: 'No se pudo subir el archivo.' }
+  }
+}
+
+export const deleteProjectFile = (id: number) =>
+  request<Record<string, never>>(`/files/${id}`, { method: 'DELETE' })
+
+export const getFileUrl = (url: string) => {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return `${API_BASE.replace('/api', '')}${url}`
+}
 
 export const downloadProjectPdf = async (id: number) => {
   try {

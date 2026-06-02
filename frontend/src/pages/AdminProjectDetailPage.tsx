@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { archiveProject, downloadProjectPdf, fetchProject, publishProject } from '../api/api'
 import { Project } from '../types'
 import { getErrorMessage, getStatusBadgeClass, normalizeStatus } from '../utils/ui'
+import EvidenceSection from '../components/EvidenceSection'
 
 const fichaSections: Array<{ key: keyof Project; title: string }> = [
   { key: 'generatedSummary', title: 'Resumen institucional' },
@@ -136,6 +137,13 @@ export default function AdminProjectDetailPage() {
           </section>
         )}
       </section>
+
+      <EvidenceSection
+        projectId={project.id}
+        initialLinks={project.links}
+        initialFiles={project.files}
+        canEdit
+      />
     </div>
   )
 }

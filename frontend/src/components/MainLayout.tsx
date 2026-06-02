@@ -1,8 +1,10 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useSettings } from '../context/SettingsContext'
 
 export default function MainLayout() {
   const { user, logout } = useAuth()
+  const { settings } = useSettings()
 
   const handleLogout = () => {
     if (window.confirm('¿Querés cerrar sesión?')) {
@@ -14,13 +16,16 @@ export default function MainLayout() {
     <div>
       <nav className="main-nav">
         <div className="nav-brand">
-          <Link to={user ? '/projects' : '/bank'} className="nav-title">Memoria Pedagógica</Link>
+          {settings.logoUrl && <img className="nav-logo" src={settings.logoUrl} alt={settings.appName} />}
+          <Link to={user ? '/projects' : '/bank'} className="nav-title">{settings.appName}</Link>
         </div>
         <div className="nav-links">
           <NavLink to="/bank">Banco de proyectos</NavLink>
           {user && <NavLink to="/projects">Mis proyectos</NavLink>}
           {user && <NavLink to="/projects/new">Cargar nueva experiencia</NavLink>}
           {user?.role === 'ADMIN' && <NavLink to="/admin">Administración</NavLink>}
+          {user?.role === 'ADMIN' && <NavLink to="/admin/projects">Gestión de proyectos</NavLink>}
+          {user?.role === 'ADMIN' && <NavLink to="/admin/settings">Configuración institucional</NavLink>}
         </div>
         <div className="nav-auth">
           {user ? (
@@ -36,6 +41,10 @@ export default function MainLayout() {
       <main className="page-container">
         <Outlet />
       </main>
+      <footer className="app-footer">
+        <span>{settings.institutionName}</span>
+        {settings.footerText && <span>{settings.footerText}</span>}
+      </footer>
     </div>
   )
 }

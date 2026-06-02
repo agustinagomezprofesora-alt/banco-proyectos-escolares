@@ -30,12 +30,33 @@ export interface Project {
   improvementSuggestions?: string | null
   suggestedTags?: string | null
   observations?: string | null
+  links?: ProjectLink[]
+  files?: ProjectFile[]
   author: {
     id: number
     name: string
     email: string
     role: string
   }
+}
+
+export interface ProjectLink {
+  id: number
+  projectId: number
+  label: string
+  url: string
+  createdAt: string
+}
+
+export interface ProjectFile {
+  id: number
+  projectId: number
+  originalName: string
+  storedName: string
+  mimeType: string
+  size: number
+  url: string
+  createdAt: string
 }
 
 export interface ProjectStats {
@@ -47,4 +68,18 @@ export interface ProjectStats {
   projectsByArea: Array<{ area: string; count: number }>
   projectsByType: Array<{ type: string; count: number }>
   projectsByStatus: Array<{ status: string; count: number }>
+}
+
+export interface InstitutionSettings {
+  id?: number
+  institutionName: string
+  appName: string
+  logoUrl?: string | null
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  contactEmail?: string | null
+  footerText?: string | null
+  allowPublicBank: boolean
+  createdAt?: string
+  updatedAt?: string
 }

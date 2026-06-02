@@ -32,7 +32,10 @@ export default function AdminDashboardPage() {
           <h1>Administración</h1>
           <p>Revisión, publicación y seguimiento del banco institucional.</p>
         </div>
-        <button className="primary-btn" onClick={() => navigate('/admin/projects')}>Gestionar proyectos</button>
+        <div>
+          <button className="primary-btn" onClick={() => navigate('/admin/projects')}>Gestión de proyectos</button>
+          <button onClick={() => navigate('/admin/settings')}>Configuración institucional</button>
+        </div>
       </header>
 
       {error && <div className="error">{error}</div>}
@@ -74,6 +77,7 @@ export default function AdminDashboardPage() {
           <h2>Accesos rápidos de administración</h2>
           <div className="admin-actions-grid">
             <button onClick={() => navigate('/admin/projects')}>Todos los proyectos</button>
+            <button onClick={() => navigate('/admin/settings')}>Configuración institucional</button>
             <button onClick={() => navigate('/admin/projects?status=Publicado')}>Proyectos publicados</button>
             <button onClick={() => navigate('/admin/projects?status=Archivado')}>Proyectos archivados</button>
             <button onClick={() => navigate('/bank')}>Banco de proyectos</button>

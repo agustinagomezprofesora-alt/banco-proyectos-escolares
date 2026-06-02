@@ -1,10 +1,12 @@
 import { useEffect, useState, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useSettings } from '../context/SettingsContext'
 import { getErrorMessage } from '../utils/ui'
 
 export default function LoginPage() {
   const { login } = useAuth()
+  const { settings } = useSettings()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,7 +37,13 @@ export default function LoginPage() {
 
   return (
     <div className="container auth-container">
-      <h1>Iniciar sesión</h1>
+      <div className="auth-heading">
+        {settings.logoUrl && <img src={settings.logoUrl} alt={settings.appName} />}
+        <div>
+          <p>{settings.institutionName}</p>
+          <h1>{settings.appName}</h1>
+        </div>
+      </div>
       <form onSubmit={handleSubmit}>
         <label>
           Email

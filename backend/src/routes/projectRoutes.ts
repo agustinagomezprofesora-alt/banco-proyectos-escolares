@@ -1,12 +1,30 @@
 import { Router } from 'express'
 import { listProjects, getProject, createProject, updateProject, deleteProject, generateFicha, submitForReview, getPublishedProjects, getPublishedProject, duplicateProject, publishProject, archiveProject, downloadProjectPdf } from '../controllers/projectController'
+import { createProjectLink, listProjectFiles, listProjectLinks, uploadProjectFile } from '../controllers/evidenceController'
+import { uploadProjectFile as uploadProjectFileMiddleware } from '../services/uploadService'
 
 const router = Router()
+
+const uploadSingleProjectFile = (req: any, res: any, next: any) => {
+  uploadProjectFileMiddleware.single('file')(req, res, (error: any) => {
+    if (!error) return next()
+
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'El archivo no puede superar los 10 MB.' })
+    }
+
+    return res.status(400).json({ message: error.message || 'No se pudo subir el archivo.' })
+  })
+}
 
 router.get('/published', getPublishedProjects)
 router.get('/published/:id', getPublishedProject)
 router.get('/', listProjects)
 router.get('/:id/pdf', downloadProjectPdf)
+router.get('/:id/links', listProjectLinks)
+router.post('/:id/links', createProjectLink)
+router.get('/:id/files', listProjectFiles)
+router.post('/:id/files', uploadSingleProjectFile, uploadProjectFile)
 router.get('/:id', getProject)
 router.post('/', createProject)
 router.put('/:id', updateProject)

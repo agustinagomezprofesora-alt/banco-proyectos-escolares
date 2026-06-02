@@ -1,0 +1,62 @@
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { fetchSettings } from '../api/api'
+import { InstitutionSettings } from '../types'
+
+const defaultSettings: InstitutionSettings = {
+  institutionName: 'Escuela / Institución',
+  appName: 'Memoria Pedagógica Digital',
+  logoUrl: null,
+  primaryColor: null,
+  secondaryColor: null,
+  contactEmail: null,
+  footerText: 'Ficha generada por Memoria Pedagógica Digital',
+  allowPublicBank: false
+}
+
+interface SettingsContextValue {
+  settings: InstitutionSettings
+  loading: boolean
+  reloadSettings: () => Promise<void>
+  setSettings: (settings: InstitutionSettings) => void
+}
+
+const SettingsContext = createContext<SettingsContextValue | undefined>(undefined)
+
+export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
+  const [settings, setSettings] = useState<InstitutionSettings>(defaultSettings)
+  const [loading, setLoading] = useState(true)
+
+  const reloadSettings = useCallback(async () => {
+    try {
+      const data = await fetchSettings()
+      setSettings({ ...defaultSettings, ...data })
+    } catch {
+      setSettings(defaultSettings)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    reloadSettings()
+  }, [reloadSettings])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--institution-primary', settings.primaryColor || '#0f172a')
+    document.documentElement.style.setProperty('--institution-secondary', settings.secondaryColor || '#059669')
+  }, [settings.primaryColor, settings.secondaryColor])
+
+  return (
+    <SettingsContext.Provider value={{ settings, loading, reloadSettings, setSettings }}>
+      {children}
+    </SettingsContext.Provider>
+  )
+}
+
+export const useSettings = () => {
+  const context = useContext(SettingsContext)
+  if (!context) {
+    throw new Error('useSettings must be used within SettingsProvider')
+  }
+  return context
+}
