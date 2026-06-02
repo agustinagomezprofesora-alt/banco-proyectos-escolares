@@ -10,7 +10,7 @@ export const registerUser = async (name: string, email: string, password: string
   }
 
   const hashedPassword = await bcrypt.hash(password, 10)
-  const user = await prisma.user.create({ data: { name, email, password: hashedPassword } })
+  const user = await prisma.user.create({ data: { name, email, passwordHash: hashedPassword } })
   const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '8h' })
 
   return { user, token }
@@ -22,7 +22,7 @@ export const authenticateUser = async (email: string, password: string) => {
     return null
   }
 
-  const valid = await bcrypt.compare(password, user.password)
+  const valid = await bcrypt.compare(password, (user as any).passwordHash)
   if (!valid) {
     return null
   }

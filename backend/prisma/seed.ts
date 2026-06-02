@@ -4,39 +4,49 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  const password = await bcrypt.hash('admin123', 10)
+  const adminPass = await bcrypt.hash('admin123456', 10)
+  const teacherPass = await bcrypt.hash('docente123456', 10)
 
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: {},
+  await prisma.user.upsert({
+    where: { email: 'admin@escuela.local' },
+    update: {
+      name: 'Administrador',
+      passwordHash: adminPass,
+      role: 'ADMIN'
+    },
     create: {
-      name: 'Admin',
-      email: 'admin@example.com',
-      password
+      name: 'Administrador',
+      email: 'admin@escuela.local',
+      passwordHash: adminPass,
+      role: 'ADMIN'
     }
   })
 
-  await prisma.project.upsert({
-    where: { id: 1 },
-    update: {},
+  await prisma.user.upsert({
+    where: { email: 'docente@escuela.local' },
+    update: {
+      name: 'Docente Ejemplo',
+      passwordHash: teacherPass,
+      role: 'TEACHER'
+    },
     create: {
-      title: 'Proyecto Inicial de Memoria Pedagógica',
-      description: 'Un proyecto de ejemplo para la memoria institucional con datos mínimos y carga rápida.',
-      teacher: 'Dirección Escuela',
-      course: 'Todos los cursos',
-      area: 'Gestión Institucional',
-      experienceType: 'Proyecto Escolar',
-      link: 'https://example.com/documento',
-      isReusable: true,
-      status: 'Publicado',
-      authorId: admin.id
+      name: 'Docente Ejemplo',
+      email: 'docente@escuela.local',
+      passwordHash: teacherPass,
+      role: 'TEACHER'
     }
   })
+
+  console.log('Seed ejecutado correctamente.')
+  console.log('Usuario admin: admin@escuela.local / admin123456')
+  console.log('Usuario docente: docente@escuela.local / docente123456')
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error('Error ejecutando seed:', e)
     process.exit(1)
   })
-  .finally(() => prisma.$disconnect())
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
