@@ -4,6 +4,8 @@ import LoginPage from '../pages/LoginPage'
 import RegisterPage from '../pages/RegisterPage'
 import ProjectsPage from '../pages/ProjectsPage'
 import ProjectFormPage from '../pages/ProjectFormPage'
+import NewProjectPage from '../pages/NewProjectPage'
+import ViewFichaPage from '../pages/ViewFichaPage'
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth()
@@ -19,8 +21,9 @@ export default function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
-        <Route path="/projects/new" element={<ProtectedRoute><ProjectFormPage /></ProtectedRoute>} />
+        <Route path="/projects/new" element={<ProtectedRoute><NewProjectPage /></ProtectedRoute>} />
         <Route path="/projects/:id/edit" element={<ProtectedRoute><ProjectFormPage /></ProtectedRoute>} />
+        <Route path="/projects/:id/ficha" element={<ProtectedRoute><ViewFichaPage /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )

@@ -20,18 +20,32 @@ model User {
 }
 
 model Project {
-  id             Int      @id @default(autoincrement())
-  title          String
-  description    String
-  teacher        String
-  course         String
-  area           String
-  experienceType String
-  link           String?
-  isReusable     Boolean  @default(false)
-  status         String   @default("Cargado")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  author         User     @relation(fields: [authorId], references: [id])
-  authorId       Int
+  id                        Int      @id @default(autoincrement())
+  title                     String
+  description               String
+  teacher                   String
+  course                    String
+  area                      String
+  experienceType            String
+  link                      String?
+  isReusable                Boolean  @default(false)
+  status                    String   @default("Cargado")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  author                    User     @relation(fields: [authorId], references: [id])
+  authorId                  Int
+  
+  // Campos generados por IA (mock)
+  improvedTitle             String?
+  generatedSummary          String?
+  objectives                String?
+  mainActivities            String?
+  resourcesUsed             String?
+  finalProducts             String?
+  evidenceDescription       String?
+  reuseSuggestions          String?
+  improvementSuggestions    String?
+  suggestedTags             String?
+  observations              String?
+  additionalLink            String?
 }
