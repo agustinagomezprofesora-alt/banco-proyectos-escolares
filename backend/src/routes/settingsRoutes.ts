@@ -4,7 +4,7 @@ import { getInstitutionSettings, updateInstitutionSettings } from '../controller
 
 const router = Router()
 
-router.get('/', getInstitutionSettings)
+router.get('/', authMiddleware, getInstitutionSettings)
 router.put('/', authMiddleware, updateInstitutionSettings)
 
 export default router

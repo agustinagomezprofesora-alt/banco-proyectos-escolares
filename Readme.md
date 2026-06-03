@@ -19,7 +19,7 @@ Fases implementadas:
 - **Fase 5:** Estabilización visual, mejoras UX, responsive, mensajes y correcciones de contraste.
 - **Fase 6:** Generación de PDF institucional funcionando correctamente.
 - **Fase 7:** Evidencias, múltiples links y archivos adjuntos por proyecto.
-- **Fase 8:** Configuración institucional y respaldo. Pendiente de confirmar / próxima fase si aún no fue implementada.
+- **Fase 8:** Configuración institucional, uso de settings en la app/PDF, respaldo local SQLite y refuerzo de seguridad en archivos.
 
 ---
 
@@ -205,6 +205,7 @@ http://localhost:5173
 npm install
 npm run dev
 npm run seed
+npm run backup
 npx prisma migrate dev
 npx prisma generate
 npx prisma studio
@@ -399,9 +400,9 @@ backend/uploads
 
 ### InstitutionSettings
 
-Si Fase 8 está implementada, representa la configuración institucional.
+Representa la configuración institucional.
 
-Campos sugeridos:
+Campos principales:
 
 - id
 - institutionName
@@ -414,8 +415,6 @@ Campos sugeridos:
 - allowPublicBank
 - createdAt
 - updatedAt
-
-Si todavía no está implementado, dejar como próxima fase.
 
 ---
 
@@ -454,7 +453,7 @@ El administrador puede:
 10. Agregar o eliminar evidencias.
 11. Descargar PDF de cualquier proyecto.
 12. Ver proyectos publicados en el banco.
-13. Gestionar configuración institucional si Fase 8 está implementada.
+13. Gestionar configuración institucional.
 
 ---
 
@@ -592,7 +591,7 @@ Rutas usadas o sugeridas:
 /admin/settings
 ```
 
-`/admin/settings` corresponde a Fase 8 si está implementada.
+`/admin/settings` permite a usuarios ADMIN gestionar la configuración institucional.
 
 ---
 
@@ -648,7 +647,7 @@ DELETE /api/files/:id
 
 ### Settings
 
-Si Fase 8 está implementada:
+Requieren usuario logueado. `PUT /api/settings` requiere rol ADMIN.
 
 ```txt
 GET /api/settings
@@ -678,7 +677,7 @@ Puede:
 - Gestionar evidencias.
 - Descargar PDFs.
 - Acceder a administración.
-- Modificar configuración institucional si existe.
+- Modificar configuración institucional.
 
 ### TEACHER
 
@@ -708,13 +707,13 @@ Puede:
 
 ## Respaldo de base de datos
 
-Si Fase 8 está implementada, puede existir un script:
+Desde `backend`:
 
 ```bash
 npm run backup
 ```
 
-Debe crear una copia local de la base SQLite en:
+Crea una copia local de la base SQLite actual en:
 
 ```txt
 backend/backups
@@ -726,7 +725,7 @@ Ejemplo de nombre:
 backup-2026-06-02-18-30.db
 ```
 
-Si todavía no existe, dejarlo como próxima mejora.
+Conviene ejecutarlo antes de migraciones. Este respaldo local no reemplaza backups institucionales ni políticas formales de conservación de datos.
 
 ---
 
@@ -813,18 +812,6 @@ Abrir proyecto
 
 ## Próximas fases sugeridas
 
-### Fase 8: Configuración institucional y respaldo
-
-Si no está implementada:
-
-- Nombre de institución.
-- Nombre de app.
-- Texto de footer.
-- Colores.
-- Configuración PDF.
-- Backup local SQLite.
-- Seguridad adicional para uploads.
-
 ### Fase 9: IA real
 
 - Conectar OpenAI, Gemini u Ollama.
@@ -863,6 +850,6 @@ Si no está implementada:
 
 ## Nota final
 
-Este README refleja el estado funcional avanzado del proyecto hasta la Fase 7 y deja Fase 8 como pendiente de confirmar si aún no fue implementada.
+Este README refleja el estado funcional avanzado del proyecto hasta la Fase 8.
 
 Si se retoma el desarrollo con Codex, usar este README como referencia actualizada y no el plan inicial viejo.

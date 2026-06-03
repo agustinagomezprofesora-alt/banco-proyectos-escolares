@@ -132,7 +132,7 @@ export const archiveProject = (id: number) =>
 
 export const fetchStats = () => request<ProjectStats>('/stats')
 
-export const fetchSettings = () => request<InstitutionSettings>('/settings', {}, false)
+export const fetchSettings = () => request<InstitutionSettings>('/settings')
 
 export const updateSettings = (payload: Partial<InstitutionSettings>) =>
   request<InstitutionSettings>('/settings', { method: 'PUT', body: JSON.stringify(payload) })

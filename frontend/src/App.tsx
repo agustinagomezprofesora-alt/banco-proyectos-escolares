@@ -4,10 +4,10 @@ import { SettingsProvider } from './context/SettingsContext'
 
 export default function App() {
   return (
-    <SettingsProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <SettingsProvider>
         <AppRoutes />
-      </AuthProvider>
-    </SettingsProvider>
+      </SettingsProvider>
+    </AuthProvider>
   )
 }

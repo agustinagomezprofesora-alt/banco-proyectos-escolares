@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { fetchSettings } from '../api/api'
+import { useAuth } from './AuthContext'
 import { InstitutionSettings } from '../types'
 
 const defaultSettings: InstitutionSettings = {
@@ -23,10 +24,12 @@ interface SettingsContextValue {
 const SettingsContext = createContext<SettingsContextValue | undefined>(undefined)
 
 export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading: authLoading } = useAuth()
   const [settings, setSettings] = useState<InstitutionSettings>(defaultSettings)
   const [loading, setLoading] = useState(true)
 
   const reloadSettings = useCallback(async () => {
+    setLoading(true)
     try {
       const data = await fetchSettings()
       setSettings({ ...defaultSettings, ...data })
@@ -38,8 +41,16 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   }, [])
 
   useEffect(() => {
+    if (authLoading) return
+
+    if (!user) {
+      setSettings(defaultSettings)
+      setLoading(false)
+      return
+    }
+
     reloadSettings()
-  }, [reloadSettings])
+  }, [authLoading, user, reloadSettings])
 
   useEffect(() => {
     document.documentElement.style.setProperty('--institution-primary', settings.primaryColor || '#0f172a')
