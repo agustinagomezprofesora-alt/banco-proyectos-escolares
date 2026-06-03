@@ -21,6 +21,7 @@ Fases implementadas:
 - **Fase 7:** Evidencias, múltiples links y archivos adjuntos por proyecto.
 - **Fase 8:** Configuración institucional, uso de settings en la app/PDF, respaldo local SQLite y refuerzo de seguridad en archivos.
 - **Fase 9:** Integración de IA real gratuita o de bajo costo para generar fichas y actividades pedagógicas, manteniendo fallback mock.
+- **Fase 10:** Generación de materiales derivados del proyecto: actividades pedagógicas, juegos educativos y presentación del proyecto, con edición previa y fallback mock.
 
 ---
 
@@ -379,6 +380,28 @@ Campos de actividades pedagógicas, si existen:
 - estimatedTimeline
 - studentReflectionQuestions
 
+Campos de juegos educativos, si existen:
+
+- quizQuestions
+- trueFalse
+- multipleChoice
+- wordSearch
+- crossword
+- memoryGame
+- bingoConcepts
+- challengeCards
+- rolePlayingGame
+- reflectionGame
+
+Campos de presentación del proyecto, si existen:
+
+- presentationTitle
+- presentationSubtitle
+- slides
+- oralScript
+- visualSuggestions
+- closingMessage
+
 Estados usados:
 
 - Cargado
@@ -452,12 +475,14 @@ El docente puede:
 6. Generar ficha institucional automáticamente.
 7. Editar la ficha generada.
 8. Generar actividades pedagógicas vinculadas al proyecto.
-9. Editar la ficha y las actividades generadas.
-10. Agregar links y archivos como evidencias.
-11. Enviar a revisión.
-12. Ver sus proyectos por estado.
-13. Descargar PDF de proyectos propios.
-14. Usar proyectos publicados como base para una nueva experiencia.
+9. Generar juegos educativos vinculados al proyecto.
+10. Generar una presentación atractiva del proyecto.
+11. Editar la ficha y los materiales generados.
+12. Agregar links y archivos como evidencias.
+13. Enviar a revisión.
+14. Ver sus proyectos por estado.
+15. Descargar PDF de proyectos propios.
+16. Usar proyectos publicados como base para una nueva experiencia.
 
 ---
 
@@ -555,6 +580,22 @@ Si falta la API key del proveedor elegido, la app usa mock. Si la API falla o de
 
 La IA es asistiva: la ficha y las actividades generadas deben revisarse y editarse antes de enviar a revisión o usar en clase. El sistema no publica automáticamente contenido generado por IA.
 
+## Generación de materiales derivados del proyecto
+
+La app permite generar materiales derivados desde un proyecto cargado:
+
+- Actividades pedagógicas.
+- Juegos educativos.
+- Presentación del proyecto.
+
+Los materiales pueden generarse con IA real si el proveedor configurado está disponible. Si no hay API key, si el proveedor falla o si la respuesta no tiene JSON válido, la app usa generación mock como respaldo para no interrumpir el flujo docente.
+
+Los juegos incluyen quiz, verdadero/falso, opción múltiple, sopa de letras, crucigrama, memotest, bingo de conceptos, tarjetas desafío, juego de roles y reflexión.
+
+La presentación incluye título, subtítulo, estructura de diapositivas, guion oral, sugerencias visuales y mensaje de cierre.
+
+Todo contenido generado es asistivo: debe revisarse, editarse y ajustarse antes de usarse en clase, publicarse o incorporarse al PDF institucional. La generación no publica proyectos automáticamente.
+
 ---
 
 ## PDF institucional
@@ -571,6 +612,8 @@ El PDF incluye:
 - Descripción.
 - Ficha institucional generada.
 - Actividades pedagógicas generadas, si existen.
+- Juegos educativos generados, si existen.
+- Presentación del proyecto generada, si existe.
 - Evidencias y recursos si existen.
 - Pie de página.
 - Numeración correcta.
@@ -670,6 +713,8 @@ DELETE /api/projects/:id
 
 POST /api/projects/:id/generate
 POST /api/projects/:id/generate-activities
+POST /api/projects/:id/generate-games
+POST /api/projects/:id/generate-presentation
 POST /api/projects/:id/submit-review
 POST /api/projects/:id/publish
 POST /api/projects/:id/archive
@@ -937,6 +982,6 @@ Abrir proyecto
 
 ## Nota final
 
-Este README refleja el estado funcional avanzado del proyecto hasta la Fase 9.
+Este README refleja el estado funcional avanzado del proyecto hasta la Fase 10.
 
 Si se retoma el desarrollo con Codex, usar este README como referencia actualizada y no el plan inicial viejo.

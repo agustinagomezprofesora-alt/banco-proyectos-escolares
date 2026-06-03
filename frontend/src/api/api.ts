@@ -124,6 +124,12 @@ export const generateFicha = (id: number) =>
 export const generateActivities = (id: number) =>
   request<GeneratedProjectResponse>(`/projects/${id}/generate-activities`, { method: 'POST' })
 
+export const generateGames = (id: number) =>
+  request<GeneratedProjectResponse>(`/projects/${id}/generate-games`, { method: 'POST' })
+
+export const generatePresentation = (id: number) =>
+  request<GeneratedProjectResponse>(`/projects/${id}/generate-presentation`, { method: 'POST' })
+
 export const submitProjectReview = (id: number) =>
   request<Project>(`/projects/${id}/submit-review`, { method: 'POST' })
 

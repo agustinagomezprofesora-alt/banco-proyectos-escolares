@@ -40,6 +40,22 @@ export interface Project {
   requiredResources?: string | null
   estimatedTimeline?: string | null
   studentReflectionQuestions?: string | null
+  quizQuestions?: string | null
+  trueFalse?: string | null
+  multipleChoice?: string | null
+  wordSearch?: string | null
+  crossword?: string | null
+  memoryGame?: string | null
+  bingoConcepts?: string | null
+  challengeCards?: string | null
+  rolePlayingGame?: string | null
+  reflectionGame?: string | null
+  presentationTitle?: string | null
+  presentationSubtitle?: string | null
+  slides?: string | null
+  oralScript?: string | null
+  visualSuggestions?: string | null
+  closingMessage?: string | null
   links?: ProjectLink[]
   files?: ProjectFile[]
   author: {
@@ -62,6 +78,60 @@ export interface ProjectLink {
   label: string
   url: string
   createdAt: string
+}
+
+export interface QuizQuestion {
+  question: string
+  answer?: string
+}
+
+export interface TrueFalseItem {
+  statement: string
+  answer?: boolean | null
+}
+
+export interface MultipleChoiceQuestion {
+  question: string
+  options: string[]
+  answer?: string
+}
+
+export interface MemoryCardItem {
+  concept: string
+  definition: string
+}
+
+export interface ChallengeCardItem {
+  title: string
+  prompt: string
+}
+
+export interface RoleCardItem {
+  role: string
+  goal?: string
+  actions?: string[]
+}
+
+export interface ReflectionItem {
+  prompt: string
+}
+
+export interface SlideItem {
+  number: number
+  title: string
+  content: string[]
+  visualSuggestion?: string
+}
+
+export interface CrosswordEntry {
+  number: number
+  clue: string
+  length: number
+}
+
+export interface BingoCard {
+  id: string
+  grid: string[][]
 }
 
 export interface ProjectFile {

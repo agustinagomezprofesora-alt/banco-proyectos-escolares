@@ -32,6 +32,22 @@ type PdfProject = {
   requiredResources?: string | null
   estimatedTimeline?: string | null
   studentReflectionQuestions?: string | null
+  quizQuestions?: string | null
+  trueFalse?: string | null
+  multipleChoice?: string | null
+  wordSearch?: string | null
+  crossword?: string | null
+  memoryGame?: string | null
+  bingoConcepts?: string | null
+  challengeCards?: string | null
+  rolePlayingGame?: string | null
+  reflectionGame?: string | null
+  presentationTitle?: string | null
+  presentationSubtitle?: string | null
+  slides?: string | null
+  oralScript?: string | null
+  visualSuggestions?: string | null
+  closingMessage?: string | null
   links?: Array<{ label: string; url: string }>
   files?: Array<{ originalName: string; url?: string | null }>
 }
@@ -235,6 +251,52 @@ export const generateProjectPdf = async (project: PdfProject, settings?: PdfSett
         .text('Actividades pedagógicas', { width: contentWidth })
 
       visibleActivitySections.forEach(([title, content]) => addSection(doc, title, content, contentWidth))
+    }
+
+    const gameSections: Array<[string, unknown]> = [
+      ['Quiz', project.quizQuestions],
+      ['Verdadero/Falso', project.trueFalse],
+      ['OpciÃ³n mÃºltiple', project.multipleChoice],
+      ['Sopa de letras', project.wordSearch],
+      ['Crucigrama', project.crossword],
+      ['Memotest', project.memoryGame],
+      ['Bingo', project.bingoConcepts],
+      ['Tarjetas desafÃ­o', project.challengeCards],
+      ['Juego de roles', project.rolePlayingGame],
+      ['ReflexiÃ³n', project.reflectionGame]
+    ]
+    const visibleGameSections = gameSections.filter(([, content]) => hasValue(content))
+
+    if (visibleGameSections.length > 0) {
+      doc.moveDown(0.8)
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(13)
+        .fillColor('#0f172a')
+        .text('Juegos educativos', { width: contentWidth })
+
+      visibleGameSections.forEach(([title, content]) => addSection(doc, title, content, contentWidth))
+    }
+
+    const presentationSections: Array<[string, unknown]> = [
+      ['TÃ­tulo de la presentaciÃ³n', project.presentationTitle],
+      ['SubtÃ­tulo', project.presentationSubtitle],
+      ['Estructura de diapositivas', project.slides],
+      ['GuiÃ³n oral', project.oralScript],
+      ['Sugerencias visuales', project.visualSuggestions],
+      ['Cierre final', project.closingMessage]
+    ]
+    const visiblePresentationSections = presentationSections.filter(([, content]) => hasValue(content))
+
+    if (visiblePresentationSections.length > 0) {
+      doc.moveDown(0.8)
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(13)
+        .fillColor('#0f172a')
+        .text('PresentaciÃ³n del proyecto', { width: contentWidth })
+
+      visiblePresentationSections.forEach(([title, content]) => addSection(doc, title, content, contentWidth))
     }
 
     const evidenceItems = [

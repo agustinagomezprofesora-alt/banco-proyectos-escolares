@@ -74,6 +74,44 @@ export default function BankProjectDetailPage() {
     ['Recomendaciones de mejora', project.improvementSuggestions]
   ]
 
+  const activitySections: Array<[string, string | null | undefined]> = [
+    ['Actividades de inicio', project.introActivities],
+    ['Actividades de desarrollo', project.developmentActivities],
+    ['Actividades de cierre', project.closingActivities],
+    ['Criterios de evaluación', project.assessmentCriteria],
+    ['Rúbrica', project.rubric],
+    ['Sugerencias interdisciplinarias', project.interdisciplinarySuggestions],
+    ['Adecuaciones', project.adaptations],
+    ['Recursos necesarios', project.requiredResources],
+    ['Cronograma estimado', project.estimatedTimeline],
+    ['Preguntas de reflexión', project.studentReflectionQuestions]
+  ]
+  const visibleActivitySections = activitySections.filter(([, value]) => Boolean(value?.trim()))
+
+  const gameSections: Array<[string, string | null | undefined]> = [
+    ['Quiz', project.quizQuestions],
+    ['Verdadero/Falso', project.trueFalse],
+    ['Opcion multiple', project.multipleChoice],
+    ['Sopa de letras', project.wordSearch],
+    ['Crucigrama', project.crossword],
+    ['Memotest', project.memoryGame],
+    ['Bingo', project.bingoConcepts],
+    ['Tarjetas desafio', project.challengeCards],
+    ['Juego de roles', project.rolePlayingGame],
+    ['Reflexion', project.reflectionGame]
+  ]
+  const visibleGameSections = gameSections.filter(([, value]) => Boolean(value?.trim()))
+
+  const presentationSections: Array<[string, string | null | undefined]> = [
+    ['Titulo de la presentacion', project.presentationTitle],
+    ['Subtitulo', project.presentationSubtitle],
+    ['Estructura de diapositivas', project.slides],
+    ['Guion oral', project.oralScript],
+    ['Sugerencias visuales', project.visualSuggestions],
+    ['Cierre final', project.closingMessage]
+  ]
+  const visiblePresentationSections = presentationSections.filter(([, value]) => Boolean(value?.trim()))
+
   return (
     <div className="container">
       <header className="header">
@@ -83,6 +121,9 @@ export default function BankProjectDetailPage() {
         </div>
         <div>
           <button onClick={() => navigate('/bank')}>Volver al banco</button>
+          <button className="btn-view" onClick={() => navigate(`/bank/${project.id}/materials`)}>
+            Ver recursos visuales
+          </button>
           {user && (
             <>
               <button onClick={handleDownloadPdf} disabled={downloading}>
@@ -135,6 +176,45 @@ export default function BankProjectDetailPage() {
           <div className="tags">
             {project.suggestedTags.split(', ').map((tag) => <span key={tag} className="tag">{tag}</span>)}
           </div>
+        </section>
+      )}
+
+      {visibleActivitySections.length > 0 && (
+        <section className="detail-section">
+          <h2>Actividades pedagógicas</h2>
+          <p className="muted-text">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</p>
+          {visibleActivitySections.map(([title, value]) => (
+            <section key={title}>
+              <h2>{title}</h2>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{value}</p>
+            </section>
+          ))}
+        </section>
+      )}
+
+      {visibleGameSections.length > 0 && (
+        <section className="detail-section">
+          <h2>Juegos educativos</h2>
+          <p className="muted-text">Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.</p>
+          {visibleGameSections.map(([title, value]) => (
+            <section key={title}>
+              <h2>{title}</h2>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{value}</p>
+            </section>
+          ))}
+        </section>
+      )}
+
+      {visiblePresentationSections.length > 0 && (
+        <section className="detail-section">
+          <h2>Presentacion del proyecto</h2>
+          <p className="muted-text">Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.</p>
+          {visiblePresentationSections.map(([title, value]) => (
+            <section key={title}>
+              <h2>{title}</h2>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{value}</p>
+            </section>
+          ))}
         </section>
       )}
 

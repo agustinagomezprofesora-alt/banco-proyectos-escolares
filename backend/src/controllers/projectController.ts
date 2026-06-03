@@ -2,7 +2,7 @@ import { Response } from 'express'
 import { prisma } from '../config/prisma'
 import { projectSchema } from '../validators/projectValidator'
 import { AuthRequest } from '../middlewares/authMiddleware'
-import { generateProjectActivities, generateProjectFicha } from '../services/aiService'
+import { generateProjectActivities, generateProjectFicha, generateProjectGames, generateProjectPresentation } from '../services/aiService'
 import { generateProjectPdf } from '../services/pdfService'
 
 const authorSelect = {
@@ -44,6 +44,28 @@ const activityFields = [
   'studentReflectionQuestions'
 ] as const
 
+const gameFields = [
+  'quizQuestions',
+  'trueFalse',
+  'multipleChoice',
+  'wordSearch',
+  'crossword',
+  'memoryGame',
+  'bingoConcepts',
+  'challengeCards',
+  'rolePlayingGame',
+  'reflectionGame'
+] as const
+
+const presentationFields = [
+  'presentationTitle',
+  'presentationSubtitle',
+  'slides',
+  'oralScript',
+  'visualSuggestions',
+  'closingMessage'
+] as const
+
 const baseFields = [
   'title',
   'description',
@@ -55,7 +77,9 @@ const baseFields = [
   'isReusable',
   'status',
   ...fichaFields,
-  ...activityFields
+  ...activityFields,
+  ...gameFields,
+  ...presentationFields
 ] as const
 
 const isAdmin = (req: AuthRequest) => req.user?.role === 'ADMIN'
@@ -116,6 +140,16 @@ const buildAIInput = (project: any, evidence: { links: Array<{ label: string; ur
   reuseSuggestions: project.reuseSuggestions,
   improvementSuggestions: project.improvementSuggestions,
   suggestedTags: project.suggestedTags,
+  introActivities: project.introActivities,
+  developmentActivities: project.developmentActivities,
+  closingActivities: project.closingActivities,
+  assessmentCriteria: project.assessmentCriteria,
+  rubric: project.rubric,
+  interdisciplinarySuggestions: project.interdisciplinarySuggestions,
+  adaptations: project.adaptations,
+  requiredResources: project.requiredResources,
+  estimatedTimeline: project.estimatedTimeline,
+  studentReflectionQuestions: project.studentReflectionQuestions,
   links: evidence.links,
   files: evidence.files
 })
@@ -400,6 +434,60 @@ export const generateActivities = async (req: AuthRequest, res: Response) => {
     return res.json({ ...updated, generationMode: result.generationMode })
   } catch (error) {
     return res.status(500).json({ message: 'Error generando actividades' })
+  }
+}
+
+export const generateGames = async (req: AuthRequest, res: Response) => {
+  const id = Number(req.params.id)
+  const project = await prisma.project.findUnique({ where: { id } })
+  if (!project) {
+    return res.status(404).json({ message: 'Proyecto no encontrado' })
+  }
+
+  if (!canAccessProject(req, project.authorId)) {
+    return res.status(403).json({ message: 'No tenÃ©s permisos para generar juegos de este proyecto.' })
+  }
+
+  try {
+    const evidence = await getProjectEvidenceForAI(id)
+    const result = await generateProjectGames(buildAIInput(project, evidence))
+
+    const updated = await prisma.project.update({
+      where: { id },
+      data: result.games,
+      include: projectInclude
+    })
+
+    return res.json({ ...updated, generationMode: result.generationMode })
+  } catch (error) {
+    return res.status(500).json({ message: 'Error generando juegos educativos' })
+  }
+}
+
+export const generatePresentation = async (req: AuthRequest, res: Response) => {
+  const id = Number(req.params.id)
+  const project = await prisma.project.findUnique({ where: { id } })
+  if (!project) {
+    return res.status(404).json({ message: 'Proyecto no encontrado' })
+  }
+
+  if (!canAccessProject(req, project.authorId)) {
+    return res.status(403).json({ message: 'No tenÃ©s permisos para generar presentaciÃ³n de este proyecto.' })
+  }
+
+  try {
+    const evidence = await getProjectEvidenceForAI(id)
+    const result = await generateProjectPresentation(buildAIInput(project, evidence))
+
+    const updated = await prisma.project.update({
+      where: { id },
+      data: result.presentation,
+      include: projectInclude
+    })
+
+    return res.json({ ...updated, generationMode: result.generationMode })
+  } catch (error) {
+    return res.status(500).json({ message: 'Error generando presentaciÃ³n del proyecto' })
   }
 }
 

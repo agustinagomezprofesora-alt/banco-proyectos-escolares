@@ -6,6 +6,7 @@ import ProjectsPage from '../pages/ProjectsPage'
 import ProjectFormPage from '../pages/ProjectFormPage'
 import NewProjectPage from '../pages/NewProjectPage'
 import ViewFichaPage from '../pages/ViewFichaPage'
+import VisualResourcesPage from '../pages/VisualResourcesPage'
 import BankPage from '../pages/BankPage'
 import BankProjectDetailPage from '../pages/BankProjectDetailPage'
 import AdminDashboardPage from '../pages/AdminDashboardPage'
@@ -52,7 +53,11 @@ export default function AppRoutes() {
           <Route path="/projects/:id/edit" element={<ProtectedRoute><ProjectFormPage /></ProtectedRoute>} />
           <Route path="/projects/:id/ficha" element={<ProtectedRoute><ViewFichaPage /></ProtectedRoute>} />
           <Route path="/projects/:id/generated" element={<ProtectedRoute><ViewFichaPage /></ProtectedRoute>} />
+          <Route path="/projects/:id/materials" element={<ProtectedRoute><VisualResourcesPage /></ProtectedRoute>} />
+          <Route path="/bank/:id/materials" element={<VisualResourcesPage />} />
           <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+          <Route path="/admin/projects/:id" element={<AdminRoute><AdminProjectDetailPage /></AdminRoute>} />
+          <Route path="/admin/projects/:id/materials" element={<AdminRoute><VisualResourcesPage /></AdminRoute>} />
           <Route path="/admin/projects" element={<AdminRoute><AdminProjectsPage /></AdminRoute>} />
           <Route path="/admin/projects/:id" element={<AdminRoute><AdminProjectDetailPage /></AdminRoute>} />
           <Route path="/admin/projects/:id/edit" element={<AdminRoute><ProjectFormPage /></AdminRoute>} />

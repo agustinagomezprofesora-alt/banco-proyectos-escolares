@@ -58,6 +58,22 @@ model Project {
   requiredResources         String?
   estimatedTimeline         String?
   studentReflectionQuestions String?
+  quizQuestions             String?
+  trueFalse                 String?
+  multipleChoice            String?
+  wordSearch                String?
+  crossword                 String?
+  memoryGame                String?
+  bingoConcepts             String?
+  challengeCards            String?
+  rolePlayingGame           String?
+  reflectionGame            String?
+  presentationTitle         String?
+  presentationSubtitle      String?
+  slides                    String?
+  oralScript                String?
+  visualSuggestions         String?
+  closingMessage            String?
 
   links                     ProjectLink[]
   files                     ProjectFile[]

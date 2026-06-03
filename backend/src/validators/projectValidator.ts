@@ -29,5 +29,21 @@ export const projectSchema = z.object({
   adaptations: z.string().optional().nullable(),
   requiredResources: z.string().optional().nullable(),
   estimatedTimeline: z.string().optional().nullable(),
-  studentReflectionQuestions: z.string().optional().nullable()
+  studentReflectionQuestions: z.string().optional().nullable(),
+  quizQuestions: z.string().optional().nullable(),
+  trueFalse: z.string().optional().nullable(),
+  multipleChoice: z.string().optional().nullable(),
+  wordSearch: z.string().optional().nullable(),
+  crossword: z.string().optional().nullable(),
+  memoryGame: z.string().optional().nullable(),
+  bingoConcepts: z.string().optional().nullable(),
+  challengeCards: z.string().optional().nullable(),
+  rolePlayingGame: z.string().optional().nullable(),
+  reflectionGame: z.string().optional().nullable(),
+  presentationTitle: z.string().optional().nullable(),
+  presentationSubtitle: z.string().optional().nullable(),
+  slides: z.string().optional().nullable(),
+  oralScript: z.string().optional().nullable(),
+  visualSuggestions: z.string().optional().nullable(),
+  closingMessage: z.string().optional().nullable()
 })

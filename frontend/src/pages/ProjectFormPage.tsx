@@ -23,7 +23,33 @@ const initialState = {
   evidenceDescription: '',
   reuseSuggestions: '',
   improvementSuggestions: '',
-  suggestedTags: ''
+  suggestedTags: '',
+  introActivities: '',
+  developmentActivities: '',
+  closingActivities: '',
+  assessmentCriteria: '',
+  rubric: '',
+  interdisciplinarySuggestions: '',
+  adaptations: '',
+  requiredResources: '',
+  estimatedTimeline: '',
+  studentReflectionQuestions: '',
+  quizQuestions: '',
+  trueFalse: '',
+  multipleChoice: '',
+  wordSearch: '',
+  crossword: '',
+  memoryGame: '',
+  bingoConcepts: '',
+  challengeCards: '',
+  rolePlayingGame: '',
+  reflectionGame: '',
+  presentationTitle: '',
+  presentationSubtitle: '',
+  slides: '',
+  oralScript: '',
+  visualSuggestions: '',
+  closingMessage: ''
 }
 
 const fichaFields = [
@@ -37,6 +63,41 @@ const fichaFields = [
   ['reuseSuggestions', 'Sugerencias de reutilización'],
   ['improvementSuggestions', 'Sugerencias de mejora'],
   ['suggestedTags', 'Etiquetas sugeridas']
+] as const
+
+const activityFields = [
+  ['introActivities', 'Actividades de inicio'],
+  ['developmentActivities', 'Actividades de desarrollo'],
+  ['closingActivities', 'Actividades de cierre'],
+  ['assessmentCriteria', 'Criterios de evaluación'],
+  ['rubric', 'Rúbrica'],
+  ['interdisciplinarySuggestions', 'Sugerencias interdisciplinarias'],
+  ['adaptations', 'Adecuaciones'],
+  ['requiredResources', 'Recursos necesarios'],
+  ['estimatedTimeline', 'Cronograma estimado'],
+  ['studentReflectionQuestions', 'Preguntas de reflexión']
+] as const
+
+const gameFields = [
+  ['quizQuestions', 'Quiz'],
+  ['trueFalse', 'Verdadero/Falso'],
+  ['multipleChoice', 'Opcion multiple'],
+  ['wordSearch', 'Sopa de letras'],
+  ['crossword', 'Crucigrama'],
+  ['memoryGame', 'Memotest'],
+  ['bingoConcepts', 'Bingo'],
+  ['challengeCards', 'Tarjetas desafio'],
+  ['rolePlayingGame', 'Juego de roles'],
+  ['reflectionGame', 'Reflexion']
+] as const
+
+const presentationFields = [
+  ['presentationTitle', 'Titulo de la presentacion'],
+  ['presentationSubtitle', 'Subtitulo'],
+  ['slides', 'Estructura de diapositivas'],
+  ['oralScript', 'Guion oral'],
+  ['visualSuggestions', 'Sugerencias visuales'],
+  ['closingMessage', 'Cierre final']
 ] as const
 
 export default function ProjectFormPage() {
@@ -78,7 +139,33 @@ export default function ProjectFormPage() {
           evidenceDescription: data.evidenceDescription ?? '',
           reuseSuggestions: data.reuseSuggestions ?? '',
           improvementSuggestions: data.improvementSuggestions ?? '',
-          suggestedTags: data.suggestedTags ?? ''
+          suggestedTags: data.suggestedTags ?? '',
+          introActivities: data.introActivities ?? '',
+          developmentActivities: data.developmentActivities ?? '',
+          closingActivities: data.closingActivities ?? '',
+          assessmentCriteria: data.assessmentCriteria ?? '',
+          rubric: data.rubric ?? '',
+          interdisciplinarySuggestions: data.interdisciplinarySuggestions ?? '',
+          adaptations: data.adaptations ?? '',
+          requiredResources: data.requiredResources ?? '',
+          estimatedTimeline: data.estimatedTimeline ?? '',
+          studentReflectionQuestions: data.studentReflectionQuestions ?? '',
+          quizQuestions: data.quizQuestions ?? '',
+          trueFalse: data.trueFalse ?? '',
+          multipleChoice: data.multipleChoice ?? '',
+          wordSearch: data.wordSearch ?? '',
+          crossword: data.crossword ?? '',
+          memoryGame: data.memoryGame ?? '',
+          bingoConcepts: data.bingoConcepts ?? '',
+          challengeCards: data.challengeCards ?? '',
+          rolePlayingGame: data.rolePlayingGame ?? '',
+          reflectionGame: data.reflectionGame ?? '',
+          presentationTitle: data.presentationTitle ?? '',
+          presentationSubtitle: data.presentationSubtitle ?? '',
+          slides: data.slides ?? '',
+          oralScript: data.oralScript ?? '',
+          visualSuggestions: data.visualSuggestions ?? '',
+          closingMessage: data.closingMessage ?? ''
         })
       })
       .catch((err: any) => setError(getErrorMessage(err, 'No se pudo cargar el proyecto.')))
@@ -147,6 +234,49 @@ export default function ProjectFormPage() {
                 <label key={key}>
                   {label}
                   {key === 'improvedTitle' || key === 'suggestedTags' ? (
+                    <input value={project[key] || ''} onChange={(e) => setProject({ ...project, [key]: e.target.value })} />
+                  ) : (
+                    <textarea value={project[key] || ''} onChange={(e) => setProject({ ...project, [key]: e.target.value })} />
+                  )}
+                </label>
+              ))}
+            </fieldset>
+          )}
+
+          {isAdmin && isEdit && (
+            <fieldset className="admin-fieldset">
+              <legend>Actividades pedagógicas generadas</legend>
+              <p className="muted-text">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</p>
+              {activityFields.map(([key, label]) => (
+                <label key={key}>
+                  {label}
+                  <textarea value={project[key] || ''} onChange={(e) => setProject({ ...project, [key]: e.target.value })} />
+                </label>
+              ))}
+            </fieldset>
+          )}
+
+          {isAdmin && isEdit && (
+            <fieldset className="admin-fieldset">
+              <legend>Juegos educativos generados</legend>
+              <p className="muted-text">Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.</p>
+              {gameFields.map(([key, label]) => (
+                <label key={key}>
+                  {label}
+                  <textarea value={project[key] || ''} onChange={(e) => setProject({ ...project, [key]: e.target.value })} />
+                </label>
+              ))}
+            </fieldset>
+          )}
+
+          {isAdmin && isEdit && (
+            <fieldset className="admin-fieldset">
+              <legend>Presentacion generada</legend>
+              <p className="muted-text">Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.</p>
+              {presentationFields.map(([key, label]) => (
+                <label key={key}>
+                  {label}
+                  {key === 'presentationTitle' || key === 'presentationSubtitle' ? (
                     <input value={project[key] || ''} onChange={(e) => setProject({ ...project, [key]: e.target.value })} />
                   ) : (
                     <textarea value={project[key] || ''} onChange={(e) => setProject({ ...project, [key]: e.target.value })} />
