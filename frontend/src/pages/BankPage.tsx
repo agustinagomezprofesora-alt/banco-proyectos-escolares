@@ -114,7 +114,7 @@ export default function BankPage() {
                 <span>{project.experienceType}</span>
                 <span>{project.isReusable ? 'Reutilizable' : 'No reutilizable'}</span>
               </div>
-              <button className="primary-btn" onClick={() => navigate(`/bank/${project.id}`)}>Ver ficha</button>
+              <button className="btn-view" onClick={() => navigate(`/bank/${project.id}`)}>Ver ficha</button>
             </article>
           ))}
         </div>

@@ -208,7 +208,7 @@ export const generateProjectPdf = async (project: PdfProject, settings?: PdfSett
       ['Objetivos', project.objectives],
       ['Actividades principales', project.mainActivities],
       ['Recursos utilizados', project.resourcesUsed],
-      ['Producciones finales', project.finalProducts],
+      ['Producciónes finales', project.finalProducts],
       ['Evidencias', project.evidenceDescription],
       ['Link asociado', project.link],
       ['Sugerencias de reutilización', project.reuseSuggestions],
@@ -256,14 +256,14 @@ export const generateProjectPdf = async (project: PdfProject, settings?: PdfSett
     const gameSections: Array<[string, unknown]> = [
       ['Quiz', project.quizQuestions],
       ['Verdadero/Falso', project.trueFalse],
-      ['OpciÃ³n mÃºltiple', project.multipleChoice],
+      ['Opción múltiple', project.multipleChoice],
       ['Sopa de letras', project.wordSearch],
       ['Crucigrama', project.crossword],
       ['Memotest', project.memoryGame],
       ['Bingo', project.bingoConcepts],
-      ['Tarjetas desafÃ­o', project.challengeCards],
+      ['Tarjetas desafío', project.challengeCards],
       ['Juego de roles', project.rolePlayingGame],
-      ['ReflexiÃ³n', project.reflectionGame]
+      ['Reflexión', project.reflectionGame]
     ]
     const visibleGameSections = gameSections.filter(([, content]) => hasValue(content))
 
@@ -279,10 +279,10 @@ export const generateProjectPdf = async (project: PdfProject, settings?: PdfSett
     }
 
     const presentationSections: Array<[string, unknown]> = [
-      ['TÃ­tulo de la presentaciÃ³n', project.presentationTitle],
-      ['SubtÃ­tulo', project.presentationSubtitle],
+      ['Título de la presentación', project.presentationTitle],
+      ['Subtítulo', project.presentationSubtitle],
       ['Estructura de diapositivas', project.slides],
-      ['GuiÃ³n oral', project.oralScript],
+      ['Guión oral', project.oralScript],
       ['Sugerencias visuales', project.visualSuggestions],
       ['Cierre final', project.closingMessage]
     ]
@@ -294,7 +294,7 @@ export const generateProjectPdf = async (project: PdfProject, settings?: PdfSett
         .font('Helvetica-Bold')
         .fontSize(13)
         .fillColor('#0f172a')
-        .text('PresentaciÃ³n del proyecto', { width: contentWidth })
+        .text('Presentación del proyecto', { width: contentWidth })
 
       visiblePresentationSections.forEach(([title, content]) => addSection(doc, title, content, contentWidth))
     }

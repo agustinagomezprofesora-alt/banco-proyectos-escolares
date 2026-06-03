@@ -21,8 +21,8 @@ const toForm = (settings: InstitutionSettings): SettingsForm => ({
   logoUrl: settings.logoUrl || '',
   contactEmail: settings.contactEmail || '',
   footerText: settings.footerText || '',
-  primaryColor: settings.primaryColor || '#0f172a',
-  secondaryColor: settings.secondaryColor || '#059669',
+  primaryColor: settings.primaryColor || '#4f46e5',
+  secondaryColor: settings.secondaryColor || '#0f172a',
   allowPublicBank: settings.allowPublicBank
 })
 

@@ -4,20 +4,18 @@ import { useAuth } from '../context/AuthContext'
 import { fetchProjects, deleteProject, generateFicha } from '../api/api'
 import { Project } from '../types'
 import { getErrorMessage, getStatusBadgeClass, isReviewStatus, normalizeStatus } from '../utils/ui'
+import Tabs from '../components/ui/Tabs'
+
+type ProjectFilter = 'all' | 'drafts' | 'review' | 'published'
 
 export default function ProjectsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [projects, setProjects] = useState<Project[]>([])
-  const [filter, setFilter] = useState<'all' | 'drafts' | 'review' | 'published'>('all')
+  const [filter, setFilter] = useState<ProjectFilter>('all')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [generatingId, setGeneratingId] = useState<number | null>(null)
-
-  const getFilterButtonClass = (isActive: boolean) =>
-    isActive
-      ? 'filter-button filter-button-active px-4 py-2 rounded-lg bg-slate-900 text-white border border-slate-900 font-semibold hover:bg-slate-800 transition'
-      : 'filter-button filter-button-inactive px-4 py-2 rounded-lg bg-white text-slate-800 border border-slate-300 font-semibold hover:bg-slate-100 transition'
 
   const loadProjects = async () => {
     setLoading(true)
@@ -37,7 +35,7 @@ export default function ProjectsPage() {
   }, [])
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('¿Estás seguro de que querés eliminar este proyecto?')) return
+    if (!window.confirm('¿Estas seguro de que querés eliminar este proyecto?')) return
     try {
       await deleteProject(id)
       setProjects((prev) => prev.filter((project) => project.id !== id))
@@ -71,7 +69,7 @@ export default function ProjectsPage() {
   const publishedCount = projects.filter((project) => project.status === 'Publicado').length
 
   const emptyMessage = projects.length === 0
-    ? 'Todavía no hay proyectos en esta sección. Podés cargar una nueva experiencia para comenzar.'
+    ? 'Todavia no hay proyectos en esta seccion. Podés cargar una nueva experiencia para comenzar.'
     : 'No se encontraron proyectos con esos filtros.'
 
   return (
@@ -82,7 +80,7 @@ export default function ProjectsPage() {
           <p>Bienvenido, {user?.name}. Gestioná tus experiencias y fichas institucionales.</p>
         </div>
         <div>
-          <button onClick={() => navigate('/projects/new')} className="primary-btn">
+          <button type="button" onClick={() => navigate('/projects/new')} className="primary-btn">
             Cargar nueva experiencia
           </button>
         </div>
@@ -96,19 +94,23 @@ export default function ProjectsPage() {
         <div className="card-stat"><h3>Publicados</h3><p>{publishedCount}</p></div>
       </div>
 
-      <div className="filters">
-        <button onClick={() => setFilter('all')} className={getFilterButtonClass(filter === 'all')}>Todos ({projects.length})</button>
-        <button onClick={() => setFilter('drafts')} className={getFilterButtonClass(filter === 'drafts')}>Borradores y carga</button>
-        <button onClick={() => setFilter('review')} className={getFilterButtonClass(filter === 'review')}>En revisión ({reviewCount})</button>
-        <button onClick={() => setFilter('published')} className={getFilterButtonClass(filter === 'published')}>Publicados ({publishedCount})</button>
-      </div>
+      <Tabs
+        value={filter}
+        onChange={setFilter}
+        items={[
+          { value: 'all', label: `Todos (${projects.length})` },
+          { value: 'drafts', label: 'Borradores y carga' },
+          { value: 'review', label: `En revisión (${reviewCount})` },
+          { value: 'published', label: `Publicados (${publishedCount})` }
+        ]}
+      />
 
       {loading ? (
-        <p>Cargando proyectos...</p>
+        <div className="loading-state">Cargando proyectos...</div>
       ) : filteredProjects.length === 0 ? (
         <div className="empty-state">
           <p>{emptyMessage}</p>
-          <button onClick={() => navigate('/projects/new')} className="primary-btn">Cargar nueva experiencia</button>
+          <button type="button" onClick={() => navigate('/projects/new')} className="primary-btn">Cargar nueva experiencia</button>
         </div>
       ) : (
         <div className="project-list">
@@ -127,13 +129,13 @@ export default function ProjectsPage() {
               </div>
               <div className="project-actions">
                 {project.status === 'Cargado' && (
-                  <button onClick={() => handleGenerateFicha(project.id)} className="btn-generate" disabled={generatingId === project.id}>
+                  <button type="button" onClick={() => handleGenerateFicha(project.id)} className="btn-generate" disabled={generatingId === project.id}>
                     {generatingId === project.id ? 'Generando ficha institucional...' : 'Generar ficha'}
                   </button>
                 )}
-                <button onClick={() => navigate(`/projects/${project.id}`)} className="btn-view">Ver ficha</button>
-                <button onClick={() => navigate(`/projects/${project.id}/edit`)} className="btn-edit">Editar</button>
-                <button onClick={() => handleDelete(project.id)} className="btn-delete">Eliminar</button>
+                <button type="button" onClick={() => navigate(`/projects/${project.id}`)} className="btn-view">Ver ficha</button>
+                <button type="button" onClick={() => navigate(`/projects/${project.id}/edit`)} className="button button-secondary">Editar</button>
+                <button type="button" onClick={() => handleDelete(project.id)} className="btn-delete">Eliminar</button>
               </div>
             </article>
           ))}

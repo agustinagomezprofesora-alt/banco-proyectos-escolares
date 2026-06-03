@@ -66,7 +66,7 @@ export default function AdminDashboardPage() {
                   <h3>{project.improvedTitle || project.title}</h3>
                   <p>{project.teacher} · {project.course} · {project.area}</p>
                 </div>
-                <button onClick={() => navigate(`/admin/projects/${project.id}`)}>Revisar</button>
+                <button onClick={() => navigate(`/admin/projects/${project.id}`)}>Revisár</button>
               </article>
             ))}
           </div>

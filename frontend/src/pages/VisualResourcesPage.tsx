@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useMatch, useNavigate, useParams } from 'react-router-dom'
-import { fetchProject, fetchPublishedProject, generateGames, generatePresentation } from '../api/api'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMatch, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { downloadProjectPptx, fetchProject, fetchPublishedProject, generateGames, generatePresentation } from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import { Project } from '../types'
 import { getErrorMessage } from '../utils/ui'
@@ -50,6 +50,7 @@ const activitySections: Array<{ title: string; value?: string | null }> = [
 export default function VisualResourcesPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const bankMatch = useMatch('/bank/:id/materials')
   const adminMatch = useMatch('/admin/projects/:id/materials')
@@ -61,7 +62,9 @@ export default function VisualResourcesPage() {
   const [activeTab, setActiveTab] = useState('Juegos visuales')
   const [generatingGames, setGeneratingGames] = useState(false)
   const [generatingPresentation, setGeneratingPresentation] = useState(false)
+  const [downloadingPptx, setDownloadingPptx] = useState(false)
   const [wordSearchSeed, setWordSearchSeed] = useState(0)
+  const didAutoPrint = useRef(false)
 
   useEffect(() => {
     const loadProject = async () => {
@@ -79,6 +82,13 @@ export default function VisualResourcesPage() {
     }
     loadProject()
   }, [id, isBankView])
+
+  useEffect(() => {
+    if (loading || !project || searchParams.get('print') !== '1' || didAutoPrint.current) return
+    didAutoPrint.current = true
+    const timer = window.setTimeout(() => window.print(), 350)
+    return () => window.clearTimeout(timer)
+  }, [loading, project, searchParams])
 
   const canGenerate = !isBankView && Boolean(project && (user?.role === 'ADMIN' || user?.id === project.author.id))
   const canEditEvidence = !isBankView && Boolean(project && (user?.role === 'ADMIN' || user?.id === project.author.id))
@@ -181,6 +191,19 @@ export default function VisualResourcesPage() {
     }
   }
 
+  const handleDownloadPptx = async () => {
+    if (!project) return
+    setDownloadingPptx(true)
+    setError('')
+    try {
+      await downloadProjectPptx(project.id)
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'No se pudo generar la presentación.'))
+    } finally {
+      setDownloadingPptx(false)
+    }
+  }
+
   const backUrl = isBankView ? `/bank/${project?.id}` : isAdminView ? `/admin/projects/${project?.id}` : `/projects/${project?.id}`
 
   if (loading) return <div className="container"><p>Cargando recursos visuales...</p></div>
@@ -205,6 +228,9 @@ export default function VisualResourcesPage() {
               </button>
             </>
           )}
+          <button className="btn-view" onClick={handleDownloadPptx} disabled={downloadingPptx}>
+            {downloadingPptx ? 'Generando presentación...' : 'Descargar presentación PowerPoint'}
+          </button>
           <button className="btn-view" onClick={() => window.print()}>Imprimir recursos</button>
         </div>
       </header>
@@ -340,7 +366,7 @@ export default function VisualResourcesPage() {
 
       {activeTab === 'Evidencias' && (
         <>
-          <SectionHeader title="Evidencias" description="Visualiza y gestiona las evidencias del proyecto desde este espacio." />
+          <SectionHeader title="Evidencias" description="Visualiza y gestióna las evidencias del proyecto desde este espacio." />
           <EvidenceSection
             projectId={project.id}
             initialLinks={project.links || []}

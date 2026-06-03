@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { archiveProject, downloadProjectPdf, fetchProject, generateActivities, generateGames, generatePresentation, publishProject } from '../api/api'
+import { archiveProject, downloadProjectPdf, downloadProjectPptx, fetchProject, generateActivities, generateGames, generatePresentation, publishProject } from '../api/api'
 import { GenerationMode, Project } from '../types'
 import { getErrorMessage, getStatusBadgeClass, normalizeStatus } from '../utils/ui'
 import EvidenceSection from '../components/EvidenceSection'
+import Button from '../components/ui/Button'
+import ProjectActionCards, { type ProjectActionCardGroup } from '../components/project/ProjectActionCards'
 
 const fichaSections: Array<{ key: keyof Project; title: string }> = [
   { key: 'generatedSummary', title: 'Resumen institucional' },
@@ -32,19 +34,19 @@ const activitySections: Array<{ key: keyof Project; title: string }> = [
 const gameSections: Array<{ key: keyof Project; title: string }> = [
   { key: 'quizQuestions', title: 'Quiz' },
   { key: 'trueFalse', title: 'Verdadero/Falso' },
-  { key: 'multipleChoice', title: 'Opcion multiple' },
+  { key: 'multipleChoice', title: 'Opción múltiple' },
   { key: 'wordSearch', title: 'Sopa de letras' },
   { key: 'crossword', title: 'Crucigrama' },
   { key: 'memoryGame', title: 'Memotest' },
   { key: 'bingoConcepts', title: 'Bingo' },
-  { key: 'challengeCards', title: 'Tarjetas desafio' },
+  { key: 'challengeCards', title: 'Tarjetas desafío' },
   { key: 'rolePlayingGame', title: 'Juego de roles' },
-  { key: 'reflectionGame', title: 'Reflexion' }
+  { key: 'reflectionGame', title: 'Reflexión' }
 ]
 
 const presentationSections: Array<{ key: keyof Project; title: string }> = [
-  { key: 'presentationTitle', title: 'Titulo de la presentacion' },
-  { key: 'presentationSubtitle', title: 'Subtitulo' },
+  { key: 'presentationTitle', title: 'Título de la presentación' },
+  { key: 'presentationSubtitle', title: 'Subtítulo' },
   { key: 'slides', title: 'Estructura de diapositivas' },
   { key: 'oralScript', title: 'Guion oral' },
   { key: 'visualSuggestions', title: 'Sugerencias visuales' },
@@ -61,6 +63,7 @@ export default function AdminProjectDetailPage() {
   const [publishing, setPublishing] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [downloadingPptx, setDownloadingPptx] = useState(false)
   const [generatingActivities, setGeneratingActivities] = useState(false)
   const [generatingGames, setGeneratingGames] = useState(false)
   const [generatingPresentation, setGeneratingPresentation] = useState(false)
@@ -122,6 +125,20 @@ export default function AdminProjectDetailPage() {
     }
   }
 
+  const handleDownloadPptx = async () => {
+    if (!project) return
+    setDownloadingPptx(true)
+    setMessage('')
+    setError('')
+    try {
+      await downloadProjectPptx(project.id)
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'No se pudo generar la presentación.'))
+    } finally {
+      setDownloadingPptx(false)
+    }
+  }
+
   const handleGenerateActivities = async () => {
     if (!project) return
     setGeneratingActivities(true)
@@ -148,7 +165,7 @@ export default function AdminProjectDetailPage() {
       const updated = await generateGames(project.id)
       setProject(updated)
       setGamesMode(updated.generationMode)
-      setMessage('Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.')
+      setMessage('Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.')
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudieron generar los juegos.'))
     } finally {
@@ -165,9 +182,9 @@ export default function AdminProjectDetailPage() {
       const updated = await generatePresentation(project.id)
       setProject(updated)
       setPresentationMode(updated.generationMode)
-      setMessage('Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.')
+      setMessage('Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.')
     } catch (err: any) {
-      setError(getErrorMessage(err, 'No se pudo generar la presentacion.'))
+      setError(getErrorMessage(err, 'No se pudo generar la presentación.'))
     } finally {
       setGeneratingPresentation(false)
     }
@@ -179,34 +196,98 @@ export default function AdminProjectDetailPage() {
   const hasActivities = activitySections.some((section) => Boolean(String(project[section.key] || '').trim()))
   const hasGames = gameSections.some((section) => Boolean(String(project[section.key] || '').trim()))
   const hasPresentation = presentationSections.some((section) => Boolean(String(project[section.key] || '').trim()))
+  const materialsUrl = `/admin/projects/${project.id}/materials`
+  const actionGroups: ProjectActionCardGroup[] = [
+    {
+      title: 'Documentos',
+      actions: [
+        {
+          title: 'Ficha institucional',
+          actionLabel: downloading ? 'Descargando...' : 'PDF',
+          variant: 'secondary',
+          onClick: handleDownloadPdf,
+          disabled: downloading
+        },
+        {
+          title: 'Presentación PowerPoint',
+          actionLabel: downloadingPptx ? 'Generando...' : 'PowerPoint',
+          variant: 'secondary',
+          onClick: handleDownloadPptx,
+          disabled: downloadingPptx
+        }
+      ]
+    },
+    {
+      title: 'Recursos visuales',
+      actions: [
+        {
+          title: 'Recursos visuales',
+          actionLabel: 'Abrir recursos',
+          variant: 'secondary',
+          onClick: () => navigate(materialsUrl)
+        },
+        {
+          title: 'Imprimir recursos',
+          actionLabel: 'Imprimir',
+          variant: 'secondary',
+          onClick: () => navigate(`${materialsUrl}?print=1`)
+        }
+      ]
+    },
+    {
+      title: 'Generar',
+      actions: [
+        {
+          title: 'Actividades pedagógicas',
+          actionLabel: generatingActivities ? 'Generando...' : 'Actividades',
+          variant: 'accent',
+          onClick: handleGenerateActivities,
+          disabled: generatingActivities
+        },
+        {
+          title: 'Juegos educativos',
+          actionLabel: generatingGames ? 'Generando...' : 'Juegos',
+          variant: 'accent',
+          onClick: handleGenerateGames,
+          disabled: generatingGames
+        },
+        {
+          title: 'Presentación visual',
+          actionLabel: generatingPresentation ? 'Generando...' : 'Presentación',
+          variant: 'accent',
+          onClick: handleGeneratePresentation,
+          disabled: generatingPresentation
+        }
+      ]
+    }
+  ]
 
   return (
     <div className="container admin-page">
-      <header className="header">
+      <header className="project-detail-header">
         <div>
           <h1>{project.improvedTitle || project.title}</h1>
-          <p><span className={`badge ${getStatusBadgeClass(project.status)}`}>{normalizeStatus(project.status)}</span></p>
+          <div className="project-title-meta">
+            <span>{project.course}</span>
+            <span>{project.area}</span>
+            <span className={`badge ${getStatusBadgeClass(project.status)}`}>{normalizeStatus(project.status)}</span>
+          </div>
         </div>
-        <div>
-          <button onClick={() => navigate('/admin/projects')}>Volver</button>
-          <button onClick={handleDownloadPdf} disabled={downloading}>{downloading ? 'Descargando PDF...' : 'Descargar PDF'}</button>
-          <button onClick={handleGenerateActivities} disabled={generatingActivities}>
-            {generatingActivities ? 'Generando actividades...' : 'Generar actividades'}
-          </button>
-          <button onClick={handleGenerateGames} disabled={generatingGames}>
-            {generatingGames ? 'Generando juegos...' : 'Generar juegos'}
-          </button>
-          <button onClick={handleGeneratePresentation} disabled={generatingPresentation}>
-            {generatingPresentation ? 'Generando presentacion...' : 'Generar presentacion'}
-          </button>
-          <button className="btn-view" onClick={() => navigate(`/admin/projects/${project.id}/materials`)}>
-            Ver recursos visuales
-          </button>
-          <button className="btn-edit" onClick={() => navigate(`/admin/projects/${project.id}/edit`)}>Editar</button>
-          <button className="primary-btn" onClick={handlePublish} disabled={publishing}>{publishing ? 'Publicando proyecto...' : 'Publicar'}</button>
-          <button className="btn-delete" onClick={handleArchive} disabled={archiving}>{archiving ? 'Archivando proyecto...' : 'Archivar'}</button>
+        <div className="project-header-actions">
+          <Button variant="secondary" onClick={() => navigate('/admin/projects')}>Volver</Button>
+          <Button variant="primary" onClick={() => navigate(`/admin/projects/${project.id}/edit`)}>Editar ficha</Button>
         </div>
       </header>
+
+      <ProjectActionCards groups={actionGroups} />
+
+      <section className="project-admin-actions">
+        <h2>Gestión administrativa</h2>
+        <div className="project-admin-action-row">
+          <Button variant="success" onClick={handlePublish} disabled={publishing}>{publishing ? 'Publicando proyecto...' : 'Publicar'}</Button>
+          <Button variant="danger" onClick={handleArchive} disabled={archiving}>{archiving ? 'Archivando proyecto...' : 'Archivar'}</Button>
+        </div>
+      </section>
 
       {message && <div className="success">{message}</div>}
       {(activitiesMode || gamesMode || presentationMode) && !message && <div className="success">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</div>}
@@ -251,16 +332,7 @@ export default function AdminProjectDetailPage() {
         <h2>Materiales generados</h2>
         <div className="success">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</div>
         <div className="button-group">
-          <button onClick={handleGenerateActivities} disabled={generatingActivities}>
-            {generatingActivities ? 'Generando actividades...' : 'Generar actividades pedagogicas'}
-          </button>
-          <button onClick={handleGenerateGames} disabled={generatingGames}>
-            {generatingGames ? 'Generando juegos...' : 'Generar juegos educativos'}
-          </button>
-          <button onClick={handleGeneratePresentation} disabled={generatingPresentation}>
-            {generatingPresentation ? 'Generando presentacion...' : 'Generar presentacion del proyecto'}
-          </button>
-          <button onClick={() => navigate(`/admin/projects/${project.id}/edit`)}>Editar materiales</button>
+          <Button variant="primary" onClick={() => navigate(`/admin/projects/${project.id}/edit`)}>Editar materiales</Button>
         </div>
       </section>
 
@@ -300,7 +372,7 @@ export default function AdminProjectDetailPage() {
 
       {hasPresentation && (
         <section className="ficha-view">
-          <h2>Presentacion del proyecto</h2>
+          <h2>Presentación del proyecto</h2>
           <div className="success">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</div>
           {presentationSections.map((section) => {
             const value = String(project[section.key] || '').trim()

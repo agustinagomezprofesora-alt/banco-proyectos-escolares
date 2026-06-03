@@ -38,13 +38,13 @@ async function main() {
   })
 
   const publishedExample = await prisma.project.findFirst({
-    where: { title: 'Proyecto Inicial de Memoria Pedagógica' }
+    where: { title: 'Proyecto Iniciál de Memoria Pedagógica' }
   })
 
   if (!publishedExample) {
     await prisma.project.create({
       data: {
-        title: 'Proyecto Inicial de Memoria Pedagógica',
+        title: 'Proyecto Iniciál de Memoria Pedagógica',
         description: 'Una experiencia de ejemplo que demuestra cómo publicar y reutilizar un proyecto pedagógico.',
         teacher: teacher.name,
         course: '5to grado',
@@ -54,12 +54,12 @@ async function main() {
         isReusable: true,
         status: 'Publicado',
         authorId: teacher.id,
-        improvedTitle: 'Proyecto Inicial de Memoria Pedagógica - Ciencias Sociales',
+        improvedTitle: 'Proyecto Iniciál de Memoria Pedagógica - Ciencias Sociales',
         generatedSummary: 'Esta experiencia pedagógica publicada muestra una propuesta de trabajo en Ciencias Sociales para 5to grado con enfoque en colaboración y documentación institucional.',
         objectives: '1. Promover el pensamiento crítico con actividades de investigación.\n2. Fomentar la participación de estudiantes en producciones colaborativas.\n3. Generar evidencia didáctica con registro de trabajos.\n4. Documentar el proyecto como recurso reutilizable.',
         mainActivities: '1. Presentar la propuesta a la comunidad escolar.\n2. Desarrollar actividades de análisis histórico.\n3. Registrar resultados y producciones.\n4. Compartir evidencias en exposiciones.\n5. Evaluar el proceso y su impacto.',
         resourcesUsed: 'Recursos: material didáctico, guía docente, recursos digitales y cuaderno de registro.',
-        finalProducts: 'Producciones: informe final, presentación para la escuela y poster de evidencias.',
+        finalProducts: 'Producciónes: informe final, presentación para la escuela y poster de evidencias.',
         evidenceDescription: 'Evidencia en fichas de trabajo, fotografía de actividades y presentación final.',
         reuseSuggestions: 'Reutilizable en otras aulas de Ciencias Sociales con pequeños ajustes temáticos.',
         improvementSuggestions: 'Mejorar la documentación de evaluaciones y ampliar la participación de familias.',

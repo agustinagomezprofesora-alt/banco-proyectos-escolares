@@ -81,19 +81,19 @@ const activityFields = [
 const gameFields = [
   ['quizQuestions', 'Quiz'],
   ['trueFalse', 'Verdadero/Falso'],
-  ['multipleChoice', 'Opcion multiple'],
+  ['multipleChoice', 'Opción múltiple'],
   ['wordSearch', 'Sopa de letras'],
   ['crossword', 'Crucigrama'],
   ['memoryGame', 'Memotest'],
   ['bingoConcepts', 'Bingo'],
-  ['challengeCards', 'Tarjetas desafio'],
+  ['challengeCards', 'Tarjetas desafío'],
   ['rolePlayingGame', 'Juego de roles'],
-  ['reflectionGame', 'Reflexion']
+  ['reflectionGame', 'Reflexión']
 ] as const
 
 const presentationFields = [
-  ['presentationTitle', 'Titulo de la presentacion'],
-  ['presentationSubtitle', 'Subtitulo'],
+  ['presentationTitle', 'Título de la presentación'],
+  ['presentationSubtitle', 'Subtítulo'],
   ['slides', 'Estructura de diapositivas'],
   ['oralScript', 'Guion oral'],
   ['visualSuggestions', 'Sugerencias visuales'],
@@ -259,7 +259,7 @@ export default function ProjectFormPage() {
           {isAdmin && isEdit && (
             <fieldset className="admin-fieldset">
               <legend>Juegos educativos generados</legend>
-              <p className="muted-text">Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.</p>
+              <p className="muted-text">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</p>
               {gameFields.map(([key, label]) => (
                 <label key={key}>
                   {label}
@@ -271,8 +271,8 @@ export default function ProjectFormPage() {
 
           {isAdmin && isEdit && (
             <fieldset className="admin-fieldset">
-              <legend>Presentacion generada</legend>
-              <p className="muted-text">Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.</p>
+              <legend>Presentación generada</legend>
+              <p className="muted-text">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</p>
               {presentationFields.map(([key, label]) => (
                 <label key={key}>
                   {label}

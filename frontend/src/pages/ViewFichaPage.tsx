@@ -1,10 +1,12 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { downloadProjectPdf, fetchProject, generateActivities, generateGames, generatePresentation, submitProjectReview, updateProject } from '../api/api'
+import { downloadProjectPdf, downloadProjectPptx, fetchProject, generateActivities, generateGames, generatePresentation, submitProjectReview, updateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import { GenerationMode, Project } from '../types'
 import { getErrorMessage, getStatusBadgeClass, normalizeStatus } from '../utils/ui'
 import EvidenceSection from '../components/EvidenceSection'
+import Button from '../components/ui/Button'
+import ProjectActionCards, { type ProjectActionCardGroup } from '../components/project/ProjectActionCards'
 
 const fichaFields: Array<{ key: keyof Project; title: string }> = [
   { key: 'generatedSummary', title: 'Resumen institucional' },
@@ -33,19 +35,19 @@ const activityFields: Array<{ key: keyof Project; title: string }> = [
 const gameFields: Array<{ key: keyof Project; title: string }> = [
   { key: 'quizQuestions', title: 'Quiz' },
   { key: 'trueFalse', title: 'Verdadero/Falso' },
-  { key: 'multipleChoice', title: 'Opcion multiple' },
+  { key: 'multipleChoice', title: 'Opción múltiple' },
   { key: 'wordSearch', title: 'Sopa de letras' },
   { key: 'crossword', title: 'Crucigrama' },
   { key: 'memoryGame', title: 'Memotest' },
   { key: 'bingoConcepts', title: 'Bingo' },
-  { key: 'challengeCards', title: 'Tarjetas desafio' },
+  { key: 'challengeCards', title: 'Tarjetas desafío' },
   { key: 'rolePlayingGame', title: 'Juego de roles' },
-  { key: 'reflectionGame', title: 'Reflexion' }
+  { key: 'reflectionGame', title: 'Reflexión' }
 ]
 
 const presentationFields: Array<{ key: keyof Project; title: string }> = [
-  { key: 'presentationTitle', title: 'Titulo de la presentacion' },
-  { key: 'presentationSubtitle', title: 'Subtitulo' },
+  { key: 'presentationTitle', title: 'Título de la presentación' },
+  { key: 'presentationSubtitle', title: 'Subtítulo' },
   { key: 'slides', title: 'Estructura de diapositivas' },
   { key: 'oralScript', title: 'Guion oral' },
   { key: 'visualSuggestions', title: 'Sugerencias visuales' },
@@ -65,6 +67,7 @@ export default function ViewFichaPage() {
   const [saving, setSaving] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [downloadingPptx, setDownloadingPptx] = useState(false)
   const [generatingActivities, setGeneratingActivities] = useState(false)
   const [generatingGames, setGeneratingGames] = useState(false)
   const [generatingPresentation, setGeneratingPresentation] = useState(false)
@@ -133,6 +136,19 @@ export default function ViewFichaPage() {
     }
   }
 
+  const handleDownloadPptx = async () => {
+    if (!project) return
+    setDownloadingPptx(true)
+    setError('')
+    try {
+      await downloadProjectPptx(project.id)
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'No se pudo generar la presentación.'))
+    } finally {
+      setDownloadingPptx(false)
+    }
+  }
+
   const handleGenerateActivities = async () => {
     if (!project) return
     setGeneratingActivities(true)
@@ -175,7 +191,7 @@ export default function ViewFichaPage() {
       setEditData(updated)
       setPresentationMode(updated.generationMode)
     } catch (err: any) {
-      setError(getErrorMessage(err, 'No se pudo generar la presentacion.'))
+      setError(getErrorMessage(err, 'No se pudo generar la presentación.'))
     } finally {
       setGeneratingPresentation(false)
     }
@@ -191,36 +207,92 @@ export default function ViewFichaPage() {
   const hasActivities = activityFields.some((field) => Boolean(String(project[field.key] || '').trim()))
   const hasGames = gameFields.some((field) => Boolean(String(project[field.key] || '').trim()))
   const hasPresentation = presentationFields.some((field) => Boolean(String(project[field.key] || '').trim()))
+  const materialsUrl = `/projects/${project.id}/materials`
+  const actionGroups: ProjectActionCardGroup[] = [
+    {
+      title: 'Documentos',
+      actions: [
+        {
+          title: 'Ficha institucional',
+          actionLabel: downloading ? 'Descargando...' : 'PDF',
+          variant: 'secondary',
+          onClick: handleDownloadPdf,
+          disabled: downloading
+        },
+        {
+          title: 'Presentación PowerPoint',
+          actionLabel: downloadingPptx ? 'Generando...' : 'PowerPoint',
+          variant: 'secondary',
+          onClick: handleDownloadPptx,
+          disabled: downloadingPptx
+        }
+      ]
+    },
+    {
+      title: 'Recursos visuales',
+      actions: [
+        {
+          title: 'Recursos visuales',
+          actionLabel: 'Abrir recursos',
+          variant: 'secondary',
+          onClick: () => navigate(materialsUrl)
+        },
+        {
+          title: 'Imprimir recursos',
+          actionLabel: 'Imprimir',
+          variant: 'secondary',
+          onClick: () => navigate(`${materialsUrl}?print=1`)
+        }
+      ]
+    },
+    {
+      title: 'Generar',
+      actions: [
+        {
+          title: 'Actividades pedagógicas',
+          actionLabel: generatingActivities ? 'Generando...' : 'Actividades',
+          variant: 'accent',
+          onClick: handleGenerateActivities,
+          disabled: generatingActivities
+        },
+        {
+          title: 'Juegos educativos',
+          actionLabel: generatingGames ? 'Generando...' : 'Juegos',
+          variant: 'accent',
+          onClick: handleGenerateGames,
+          disabled: generatingGames
+        },
+        {
+          title: 'Presentación visual',
+          actionLabel: generatingPresentation ? 'Generando...' : 'Presentación',
+          variant: 'accent',
+          onClick: handleGeneratePresentation,
+          disabled: generatingPresentation
+        }
+      ]
+    }
+  ]
 
   return (
     <div className="container">
-      <header className="header">
+      <header className="project-detail-header">
         <div>
           <h1>{project.improvedTitle || project.title}</h1>
-          <p><span className={`badge ${getStatusBadgeClass(project.status)}`}>{normalizeStatus(project.status)}</span></p>
+          <div className="project-title-meta">
+            <span>{project.course}</span>
+            <span>{project.area}</span>
+            <span className={`badge ${getStatusBadgeClass(project.status)}`}>{normalizeStatus(project.status)}</span>
+          </div>
         </div>
-        <div>
-          <button onClick={() => navigate('/projects')}>Volver</button>
-          <button onClick={handleDownloadPdf} disabled={downloading}>
-            {downloading ? 'Descargando PDF...' : 'Descargar PDF'}
-          </button>
-          <button className="btn-view" onClick={() => navigate(`/projects/${project.id}/materials`)}>
-            Ver recursos visuales
-          </button>
+        <div className="project-header-actions">
+          <Button variant="secondary" onClick={() => navigate('/projects')}>Volver</Button>
           {project.status === 'Borrador generado' && (
-            <button onClick={() => setEditing(!editing)}>{editing ? 'Cancelar' : 'Editar ficha'}</button>
+            <Button variant="primary" onClick={() => setEditing(!editing)}>{editing ? 'Cancelar' : 'Editar ficha'}</Button>
           )}
-          <button onClick={handleGenerateActivities} disabled={generatingActivities}>
-            {generatingActivities ? 'Generando actividades...' : 'Generar actividades'}
-          </button>
-          <button onClick={handleGenerateGames} disabled={generatingGames}>
-            {generatingGames ? 'Generando juegos...' : 'Generar juegos'}
-          </button>
-          <button onClick={handleGeneratePresentation} disabled={generatingPresentation}>
-            {generatingPresentation ? 'Generando presentacion...' : 'Generar presentacion'}
-          </button>
         </div>
       </header>
+
+      <ProjectActionCards groups={actionGroups} />
 
       {error && <div className="error">{error}</div>}
       {generationMode && (
@@ -235,7 +307,7 @@ export default function ViewFichaPage() {
       )}
 
       {(gamesMode || presentationMode) && (
-        <div className="success">Contenido generado con asistencia de IA. Revisa y ajusta antes de usar.</div>
+        <div className="success">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</div>
       )}
 
       {editing ? (
@@ -268,7 +340,7 @@ export default function ViewFichaPage() {
               <textarea value={String(editData[field.key] || '')} onChange={(e) => setEditData({ ...editData, [field.key]: e.target.value })} />
             </label>
           ))}
-          <h2>Presentacion del proyecto</h2>
+          <h2>Presentación del proyecto</h2>
           {presentationFields.map((field) => (
             <label key={String(field.key)}>
               {field.title}
@@ -312,18 +384,9 @@ export default function ViewFichaPage() {
 
           <section>
             <h2>Materiales generados</h2>
-            <div className="success">Contenido generado con asistencia de IA. Revisa y ajusta antes de usar.</div>
+            <div className="success">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</div>
             <div className="button-group">
-              <button onClick={handleGenerateActivities} disabled={generatingActivities}>
-                {generatingActivities ? 'Generando actividades...' : 'Generar actividades pedagogicas'}
-              </button>
-              <button onClick={handleGenerateGames} disabled={generatingGames}>
-                {generatingGames ? 'Generando juegos...' : 'Generar juegos educativos'}
-              </button>
-              <button onClick={handleGeneratePresentation} disabled={generatingPresentation}>
-                {generatingPresentation ? 'Generando presentacion...' : 'Generar presentacion del proyecto'}
-              </button>
-              <button onClick={() => setEditing(true)}>Editar materiales</button>
+              <Button variant="primary" onClick={() => setEditing(true)}>Editar materiales</Button>
             </div>
           </section>
 
@@ -362,7 +425,7 @@ export default function ViewFichaPage() {
 
           {hasPresentation && (
             <section>
-              <h2>Presentacion del proyecto</h2>
+              <h2>Presentación del proyecto</h2>
               {presentationFields.map((field) => {
                 const value = String(project[field.key] || '').trim()
                 if (!value) return null
@@ -385,8 +448,8 @@ export default function ViewFichaPage() {
 
           {project.status === 'Borrador generado' && (
             <div className="button-group">
-              <button onClick={() => setEditing(true)}>Editar ficha</button>
-              <button onClick={handleSubmitReview} disabled={submitting}>{submitting ? 'Enviando a revisión...' : 'Enviar a revisión'}</button>
+              <Button variant="primary" onClick={() => setEditing(true)}>Editar ficha</Button>
+              <Button variant="accent" onClick={handleSubmitReview} disabled={submitting}>{submitting ? 'Enviando a revisión...' : 'Enviar a revisión'}</Button>
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-export const reviewStatuses = ['En revisión', 'En revision', 'En revisiÃ³n', 'En revisiÃƒÂ³n']
+export const reviewStatuses = ['En revisión', 'En revision']
 
 export const isReviewStatus = (status: string) => reviewStatuses.includes(status)
 

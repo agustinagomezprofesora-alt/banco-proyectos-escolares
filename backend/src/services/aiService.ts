@@ -233,7 +233,7 @@ const fichaContext = (input: ProjectInput) => {
     input.objectives ? `Objetivos: ${input.objectives}` : '',
     input.mainActivities ? `Actividades principales: ${input.mainActivities}` : '',
     input.resourcesUsed ? `Recursos utilizados: ${input.resourcesUsed}` : '',
-    input.finalProducts ? `Producciones finales: ${input.finalProducts}` : '',
+    input.finalProducts ? `Producciónes finales: ${input.finalProducts}` : '',
     input.evidenceDescription ? `Evidencias: ${input.evidenceDescription}` : '',
     input.reuseSuggestions ? `Sugerencias de reutilización: ${input.reuseSuggestions}` : '',
     input.improvementSuggestions ? `Sugerencias de mejora: ${input.improvementSuggestions}` : '',
@@ -248,16 +248,16 @@ const activitiesContext = (input: ProjectInput) => {
     input.introActivities ? `Actividades de inicio: ${input.introActivities}` : '',
     input.developmentActivities ? `Actividades de desarrollo: ${input.developmentActivities}` : '',
     input.closingActivities ? `Actividades de cierre: ${input.closingActivities}` : '',
-    input.assessmentCriteria ? `Criterios de evaluacion: ${input.assessmentCriteria}` : '',
+    input.assessmentCriteria ? `Criterios de evaluación: ${input.assessmentCriteria}` : '',
     input.rubric ? `Rubrica: ${input.rubric}` : '',
     input.interdisciplinarySuggestions ? `Sugerencias interdisciplinarias: ${input.interdisciplinarySuggestions}` : '',
     input.adaptations ? `Adecuaciones: ${input.adaptations}` : '',
     input.requiredResources ? `Recursos necesarios: ${input.requiredResources}` : '',
     input.estimatedTimeline ? `Cronograma estimado: ${input.estimatedTimeline}` : '',
-    input.studentReflectionQuestions ? `Preguntas de reflexion: ${input.studentReflectionQuestions}` : ''
+    input.studentReflectionQuestions ? `Preguntas de reflexión: ${input.studentReflectionQuestions}` : ''
   ].filter(Boolean)
 
-  return parts.length > 0 ? parts.join('\n') : 'Todavia no hay actividades pedagogicas generadas.'
+  return parts.length > 0 ? parts.join('\n') : 'Todavía no hay actividades pedagógicas generadas.'
 }
 
 const normalizeObject = <T extends string>(value: unknown, fields: readonly T[]) => {
@@ -534,25 +534,25 @@ const generateMockProjectActivities = (input: ProjectInput): GeneratedActivities
 })
 
 const generateMockProjectGames = (input: ProjectInput): GeneratedGames => ({
-  quizQuestions: `1. Cual es el proposito principal del proyecto "${input.title}"?\n2. Que contenidos del area ${input.area} se ponen en juego?\n3. Que evidencias permitirian mostrar el proceso realizado?\n4. Que decisiones del grupo ayudaron a mejorar la experiencia?\n5. Como podria reutilizarse esta propuesta en otro curso?`,
-  trueFalse: `1. El proyecto se vincula con el area ${input.area}. Verdadero.\n2. Las evidencias solo pueden ser archivos impresos. Falso.\n3. La reflexion final ayuda a reconocer aprendizajes. Verdadero.\n4. Una experiencia pedagogica no puede adaptarse a otros grupos. Falso.\n5. El trabajo colaborativo puede formar parte de la evaluacion. Verdadero.`,
-  multipleChoice: `1. El tipo de experiencia registrado es:\nA. ${input.experienceType}\nB. Evaluacion externa\nC. Tramite administrativo\nRespuesta sugerida: A.\n\n2. Para socializar el proyecto conviene:\nA. No registrar el proceso\nB. Organizar evidencias y explicar aprendizajes\nC. Evitar la participacion del grupo\nRespuesta sugerida: B.`,
-  wordSearch: `Conceptos sugeridos para sopa de letras: ${input.area}, proyecto, evidencia, aprendizaje, equipo, reflexion, produccion, escuela, memoria, curso.`,
-  crossword: `1. Area vinculada al proyecto: ${input.area}.\n2. Registro que muestra el proceso realizado: evidencia.\n3. Momento final para pensar lo aprendido: reflexion.\n4. Grupo destinatario de la experiencia: ${input.course}.\n5. Producto o resultado que se comparte: produccion.`,
-  memoryGame: `Armar pares de tarjetas con concepto y explicacion: evidencia / registro del proceso; objetivo / proposito de trabajo; recurso / material utilizado; produccion / resultado final; reflexion / revision de aprendizajes.`,
-  bingoConcepts: `Cartones con conceptos: ${input.area}, ${input.course}, ${input.experienceType}, evidencia, objetivo, recurso, produccion, equipo, evaluacion, reflexion, reutilizacion, escuela.`,
-  challengeCards: `Tarjeta 1: Expliquen el proyecto en un minuto.\nTarjeta 2: Elijan la evidencia mas clara y justifiquen.\nTarjeta 3: Propongan una mejora posible.\nTarjeta 4: Disenen una adaptacion para otro curso.\nTarjeta 5: Identifiquen dos aprendizajes logrados.`,
+  quizQuestions: `1. ¿Cuál es el propósito principal del proyecto "${input.title}"?\n2. ¿Qué contenidos del área ${input.area} se ponen en juego?\n3. ¿Qué evidencias permitirían mostrar el proceso realizado?\n4. ¿Qué decisiones del grupo ayudaron a mejorar la experiencia?\n5. ¿Cómo podría reutilizarse esta propuesta en otro curso?`,
+  trueFalse: `1. El proyecto se vincula con el área ${input.area}. Verdadero.\n2. Las evidencias solo pueden ser archivos impresos. Falso.\n3. La reflexión final ayuda a reconocer aprendizajes. Verdadero.\n4. Una experiencia pedagógica no puede adaptarse a otros grupos. Falso.\n5. El trabajo colaborativo puede formar parte de la evaluación. Verdadero.`,
+  multipleChoice: `1. El tipo de experiencia registrado es:\nA. ${input.experienceType}\nB. Evaluación externa\nC. Trámite administrativo\nRespuesta sugerida: A.\n\n2. Para socializar el proyecto conviene:\nA. No registrar el proceso\nB. Organizar evidencias y explicar aprendizajes\nC. Evitar la participación del grupo\nRespuesta sugerida: B.`,
+  wordSearch: `Conceptos sugeridos para sopa de letras: ${input.area}, proyecto, evidencia, aprendizaje, equipo, reflexión, producción, escuela, memoria, curso.`,
+  crossword: `1. Área vinculada al proyecto: ${input.area}.\n2. Registro que muestra el proceso realizado: evidencia.\n3. Momento final para pensar lo aprendido: reflexión.\n4. Grupo destinatario de la experiencia: ${input.course}.\n5. Producto o resultado que se comparte: producción.`,
+  memoryGame: `Armar pares de tarjetas con concepto y explicación: evidencia / registro del proceso; objetivo / propósito de trabajo; recurso / material utilizado; producción / resultado final; reflexión / revisión de aprendizajes.`,
+  bingoConcepts: `Cartones con conceptos: ${input.area}, ${input.course}, ${input.experienceType}, evidencia, objetivo, recurso, producción, equipo, evaluación, reflexión, reutilización, escuela.`,
+  challengeCards: `Tarjeta 1: Expliquen el proyecto en un minuto.\nTarjeta 2: Elijan la evidencia más clara y justifiquen.\nTarjeta 3: Propongan una mejora posible.\nTarjeta 4: Diseñen una adaptación para otro curso.\nTarjeta 5: Identifiquen dos aprendizajes logrados.`,
   rolePlayingGame: `Roles sugeridos: equipo docente, estudiantes expositores, familias, directivos y visitantes. Cada grupo formula preguntas o respuestas para simular una muestra escolar del proyecto.`,
-  reflectionGame: `Ronda final con tarjetas: "Me sorprendio...", "Aprendi que...", "Me gustaria mejorar...", "Una evidencia importante fue...", "Podriamos reutilizar esto para...".`
+  reflectionGame: `Ronda final con tarjetas: "Me sorprendió...", "Aprendí que...", "Me gustaría mejorar...", "Una evidencia importante fue...", "Podríamos reutilizar esto para...".`
 })
 
 const generateMockProjectPresentation = (input: ProjectInput): GeneratedPresentation => ({
   presentationTitle: input.title,
   presentationSubtitle: `${input.area} - ${input.course} - ${input.experienceType}`,
-  slides: `1. Titulo del proyecto: presentar "${input.title}" y el curso participante. Visual: imagen o evidencia general.\n2. Punto de partida: explicar brevemente la necesidad o pregunta que motivo la experiencia. Visual: frase disparadora.\n3. Propositos: sintetizar los objetivos principales. Visual: lista breve con iconos.\n4. Desarrollo: describir las actividades centrales. Visual: linea de tiempo.\n5. Recursos utilizados: mostrar materiales, espacios y herramientas. Visual: collage de recursos.\n6. Producciones: presentar resultados o productos finales. Visual: captura, foto o muestra.\n7. Evidencias: destacar registros del proceso. Visual: enlaces, archivos o fotografias.\n8. Aprendizajes: recuperar logros, dificultades y decisiones. Visual: nube de palabras.\n9. Reutilizacion: explicar como podria adaptarse a otros grupos. Visual: esquema de posibilidades.\n10. Cierre: agradecer y abrir preguntas. Visual: mensaje final institucional.`,
-  oralScript: `Buenos dias. Vamos a presentar el proyecto "${input.title}", desarrollado en ${input.course} dentro del area ${input.area}. La experiencia permitio organizar una propuesta de tipo ${input.experienceType}, registrar el proceso y recuperar aprendizajes institucionales. Durante la presentacion mostraremos el punto de partida, las actividades realizadas, las evidencias disponibles y posibles formas de reutilizar la propuesta.`,
-  visualSuggestions: `Usar fotos reales del proceso si estan disponibles, capturas de producciones, titulos breves, colores institucionales, una linea de tiempo simple y no mas de tres ideas por diapositiva.`,
-  closingMessage: `Esta experiencia forma parte de la memoria pedagogica institucional y puede servir como punto de partida para nuevas propuestas, adaptaciones y recorridos de aprendizaje.`
+  slides: `1. Título del proyecto: presentar "${input.title}" y el curso participante. Visual: imagen o evidencia general.\n2. Punto de partida: explicar brevemente la necesidad o pregunta que motivó la experiencia. Visual: frase disparadora.\n3. Propósitos: sintetizar los objetivos principales. Visual: lista breve con íconos.\n4. Desarrollo: describir las actividades centrales. Visual: línea de tiempo.\n5. Recursos utilizados: mostrar materiales, espacios y herramientas. Visual: collage de recursos.\n6. Producciones: presentar resultados o productos finales. Visual: captura, foto o muestra.\n7. Evidencias: destacar registros del proceso. Visual: enlaces, archivos o fotografías.\n8. Aprendizajes: recuperar logros, dificultades y decisiones. Visual: nube de palabras.\n9. Reutilización: explicar cómo podría adaptarse a otros grupos. Visual: esquema de posibilidades.\n10. Cierre: agradecer y abrir preguntas. Visual: mensaje final institucional.`,
+  oralScript: `Buenos días. Vamos a presentar el proyecto "${input.title}", desarrollado en ${input.course} dentro del área ${input.area}. La experiencia permitió organizar una propuesta de tipo ${input.experienceType}, registrar el proceso y recuperar aprendizajes institucionales. Durante la presentación mostraremos el punto de partida, las actividades realizadas, las evidencias disponibles y posibles formas de reutilizar la propuesta.`,
+  visualSuggestions: `Usar fotos reales del proceso si están disponibles, capturas de producciones, títulos breves, colores institucionales, una línea de tiempo simple y no más de tres ideas por diapositiva.`,
+  closingMessage: `Esta experiencia forma parte de la memoria pedagógica institucional y puede servir como punto de partida para nuevas propuestas, adaptaciones y recorridos de aprendizaje.`
 })
 
 const buildFichaPrompt = (input: ProjectInput) => {
@@ -639,33 +639,33 @@ Respondé únicamente JSON válido.`
 }
 
 const buildGamesPrompt = (input: ProjectInput) => {
-  return `Actua como especialista en gamificacion educativa para escuela secundaria y EPJA.
+  return `Actuá como especialista en gamificación educativa para escuela secundaria y EPJA.
 
-A partir del proyecto cargado, genera juegos educativos simples, claros y aplicables en el aula.
+A partir del proyecto cargado, generá juegos educativos simples, claros y aplicables en el aula.
 Los juegos deben poder realizarse con pocos recursos, preferentemente sin depender de internet.
-No inventes datos especificos.
+No inventes datos específicos.
 No incluyas datos personales de estudiantes.
 No incluyas datos sensibles.
-Usa espanol rioplatense formal, claro y concreto.
+Usá español rioplatense formal, claro y concreto.
 
 Datos del proyecto:
-- Titulo: ${trimText(input.title)}
+- Título: ${trimText(input.title)}
 - Docente/s: ${trimText(input.teacher)}
 - Curso: ${trimText(input.course)}
-- Area: ${trimText(input.area)}
+- Área: ${trimText(input.area)}
 - Tipo de experiencia: ${trimText(input.experienceType)}
-- Descripcion: ${trimText(input.description)}
+- Descripción: ${trimText(input.description)}
 - Evidencias generales:
 ${evidenceText(input)}
-- Reutilizable: ${input.isReusable ? 'Si' : 'No'}
+- Reutilizable: ${input.isReusable ? 'Sí' : 'No'}
 
 Ficha institucional disponible:
 ${fichaContext(input)}
 
-Actividades pedagogicas disponibles:
+Actividades pedagógicas disponibles:
 ${activitiesContext(input)}
 
-Genera estos campos:
+Generá estos campos:
 - quizQuestions
 - trueFalse
 - multipleChoice
@@ -677,40 +677,40 @@ Genera estos campos:
 - rolePlayingGame
 - reflectionGame
 
-Responde unicamente JSON valido.`
+Respondé únicamente JSON válido.`
 }
 
 const buildPresentationPrompt = (input: ProjectInput) => {
-  return `Actua como especialista en comunicacion educativa y diseno de presentaciones escolares.
+  return `Actuá como especialista en comunicación educativa y diseño de presentaciones escolares.
 
-A partir del proyecto cargado, genera una presentacion atractiva, clara y visual para socializar el proyecto.
-La presentacion debe servir para feria, muestra escolar, socializacion institucional, exposicion ante directivos o presentacion a familias.
-Inclui titulo, subtitulo, estructura de 8 a 10 diapositivas, guion oral, sugerencias visuales y mensaje de cierre.
-Cada diapositiva debe tener numero, titulo, contenido breve y sugerencia visual.
+A partir del proyecto cargado, generá una presentación atractiva, clara y visual para socializar el proyecto.
+La presentación debe servir para feria, muestra escolar, socialización institucional, exposición ante directivos o presentación a familias.
+Incluí título, subtítulo, estructura de 8 a 10 diapositivas, guión oral, sugerencias visuales y mensaje de cierre.
+Cada diapositiva debe tener número, título, contenido breve y sugerencia visual.
 El tono debe ser institucional, claro y motivador.
-No inventes datos especificos.
+No inventes datos específicos.
 No incluyas datos personales de estudiantes.
 No incluyas datos sensibles.
-Usa espanol rioplatense formal.
+Usá español rioplatense formal.
 
 Datos del proyecto:
-- Titulo: ${trimText(input.title)}
+- Título: ${trimText(input.title)}
 - Docente/s: ${trimText(input.teacher)}
 - Curso: ${trimText(input.course)}
-- Area: ${trimText(input.area)}
+- Área: ${trimText(input.area)}
 - Tipo de experiencia: ${trimText(input.experienceType)}
-- Descripcion: ${trimText(input.description)}
+- Descripción: ${trimText(input.description)}
 - Evidencias generales:
 ${evidenceText(input)}
-- Reutilizable: ${input.isReusable ? 'Si' : 'No'}
+- Reutilizable: ${input.isReusable ? 'Sí' : 'No'}
 
 Ficha institucional disponible:
 ${fichaContext(input)}
 
-Actividades pedagogicas disponibles:
+Actividades pedagógicas disponibles:
 ${activitiesContext(input)}
 
-Genera estos campos:
+Generá estos campos:
 - presentationTitle
 - presentationSubtitle
 - slides
@@ -718,7 +718,7 @@ Genera estos campos:
 - visualSuggestions
 - closingMessage
 
-Responde unicamente JSON valido.`
+Respondé únicamente JSON válido.`
 }
 
 export const generateProjectFicha = async (input: ProjectInput): Promise<GeneratedFichaResult> => {

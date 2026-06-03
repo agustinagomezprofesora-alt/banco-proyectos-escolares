@@ -376,7 +376,7 @@ export const parseRolePlayingGame = (value?: string | null): RoleCardItem[] => {
       if (parts.length >= 2) {
         items.push({ role: parts[0].trim(), goal: parts[1].trim() })
       } else {
-        items.push({ role: line, goal: 'Describir responsabilidades y acciones del rol.' })
+        items.push({ role: line, goal: 'Describir responsabilidades y acciónes del rol.' })
       }
     }
   })
@@ -625,7 +625,7 @@ export const RoleCards = ({ items }: { items: RoleCardItem[] }) => {
               ))}
             </ul>
           ) : (
-            <p>Acciones sugeridas: explicar el rol en la muestra o exposición.</p>
+            <p>Acciónes sugeridas: explicar el rol en la muestra o exposición.</p>
           )}
         </article>
       ))}

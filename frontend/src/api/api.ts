@@ -242,6 +242,44 @@ export const downloadProjectPdf = async (id: number) => {
   }
 }
 
+export const downloadProjectPptx = async (id: number) => {
+  try {
+    const response = await fetch(`${API_BASE}/projects/${id}/pptx`, {
+      headers: buildHeaders()
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearSession()
+        sessionStorage.setItem('memoria_session_message', 'La sesión expiró. Iniciá sesión nuevamente.')
+        window.location.assign('/login')
+      }
+
+      const text = await response.text()
+      let payload: any = {}
+      try {
+        payload = text ? JSON.parse(text) : {}
+      } catch {
+        payload = { message: text }
+      }
+      throw { message: friendlyMessage(payload?.message || 'No se pudo generar la presentación.') }
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `presentación-proyecto-${id}.pptx`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error: any) {
+    if (error?.message) throw error
+    throw { message: 'No se pudo generar la presentación.' }
+  }
+}
+
 const getDownloadFileName = (contentDisposition: string | null, fallback: string) => {
   const match = contentDisposition?.match(/filename="?([^"]+)"?/)
   return match?.[1] || fallback
@@ -256,7 +294,7 @@ export const downloadSystemBackup = async () => {
     if (!response.ok) {
       if (response.status === 401) {
         clearSession()
-        sessionStorage.setItem('memoria_session_message', 'La sesiÃ³n expirÃ³. IniciÃ¡ sesiÃ³n nuevamente.')
+        sessionStorage.setItem('memoria_session_message', 'La sesión expiró. Iniciá sesión nuevamente.')
         window.location.assign('/login')
       }
 
@@ -276,7 +314,7 @@ export const downloadSystemBackup = async () => {
     link.href = url
     link.download = getDownloadFileName(
       response.headers.get('Content-Disposition'),
-      'backup-memoria-pedagogica.zip'
+      'backup-memoria-pedagógica.zip'
     )
     document.body.appendChild(link)
     link.click()
@@ -312,7 +350,7 @@ export const restoreSystemBackup = async (file: File) => {
     if (!response.ok) {
       if (response.status === 401) {
         clearSession()
-        sessionStorage.setItem('memoria_session_message', 'La sesiÃ³n expirÃ³. IniciÃ¡ sesiÃ³n nuevamente.')
+        sessionStorage.setItem('memoria_session_message', 'La sesión expiró. Iniciá sesión nuevamente.')
         window.location.assign('/login')
       }
 

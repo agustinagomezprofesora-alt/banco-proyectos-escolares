@@ -7,8 +7,8 @@ const defaultSettings: InstitutionSettings = {
   institutionName: 'Escuela / Institución',
   appName: 'Memoria Pedagógica Digital',
   logoUrl: null,
-  primaryColor: null,
-  secondaryColor: null,
+  primaryColor: '#4f46e5',
+  secondaryColor: '#0f172a',
   contactEmail: null,
   footerText: 'Ficha generada por Memoria Pedagógica Digital',
   allowPublicBank: false
@@ -53,8 +53,12 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   }, [authLoading, user, reloadSettings])
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--institution-primary', settings.primaryColor || '#0f172a')
-    document.documentElement.style.setProperty('--institution-secondary', settings.secondaryColor || '#059669')
+    const primaryColor = settings.primaryColor || '#4f46e5'
+    const secondaryColor = settings.secondaryColor || '#0f172a'
+    document.documentElement.style.setProperty('--color-primary', primaryColor)
+    document.documentElement.style.setProperty('--color-secondary', secondaryColor)
+    document.documentElement.style.setProperty('--institution-primary', secondaryColor)
+    document.documentElement.style.setProperty('--institution-secondary', primaryColor)
   }, [settings.primaryColor, settings.secondaryColor])
 
   return (

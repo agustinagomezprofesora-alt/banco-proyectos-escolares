@@ -64,6 +64,7 @@ La aplicación debe reducir trabajo, no aumentarlo.
 - bcryptjs para hash de contraseñas
 - multer para subida de archivos
 - pdfkit para generación de PDF
+- pptxgenjs para generación de presentaciones PowerPoint editables
 
 ### Base de datos
 
@@ -482,7 +483,8 @@ El docente puede:
 13. Enviar a revisión.
 14. Ver sus proyectos por estado.
 15. Descargar PDF de proyectos propios.
-16. Usar proyectos publicados como base para una nueva experiencia.
+16. Descargar presentación PowerPoint editable del proyecto.
+17. Usar proyectos publicados como base para una nueva experiencia.
 
 ---
 
@@ -501,8 +503,9 @@ El administrador puede:
 9. Cambiar proyectos a revisión o borrador.
 10. Agregar o eliminar evidencias.
 11. Descargar PDF de cualquier proyecto.
-12. Ver proyectos publicados en el banco.
-13. Gestionar configuración institucional.
+12. Descargar presentación PowerPoint de cualquier proyecto.
+13. Ver proyectos publicados en el banco.
+14. Gestionar configuración institucional.
 
 ---
 
@@ -523,6 +526,7 @@ Permite:
 - Ver ficha completa.
 - Ver evidencias.
 - Descargar PDF.
+- Descargar presentación PowerPoint si el usuario está logueado.
 - Usar proyecto como base.
 
 La acción **“Usar como base”** duplica un proyecto publicado y crea una copia asociada al usuario logueado con estado:
@@ -628,6 +632,43 @@ Reglas del PDF:
 
 ---
 
+## Exportación PowerPoint
+
+Cada proyecto puede descargarse como una presentación PowerPoint editable en formato `.pptx`.
+
+La exportación usa la dependencia backend `pptxgenjs` y el endpoint:
+
+```txt
+GET /api/projects/:id/pptx
+```
+
+La ruta requiere token JWT. Un usuario ADMIN puede descargar la presentación de cualquier proyecto. Un usuario TEACHER puede descargar presentaciones de sus propios proyectos. Los proyectos publicados también pueden descargarse por usuarios logueados.
+
+El frontend muestra el botón **Descargar presentación PowerPoint** en:
+
+- Vista del proyecto.
+- Vista de materiales visuales.
+- Vista admin del proyecto.
+- Banco institucional, cuando el usuario está logueado y el proyecto está publicado.
+
+La descarga no reemplaza el PDF institucional. Quedan separadas las acciones:
+
+- Descargar ficha PDF.
+- Ver o imprimir recursos visuales.
+- Descargar presentación PowerPoint.
+
+El archivo generado incluye una plantilla 16:9 con estilos, colores institucionales, portada, diapositivas internas, bloques laterales, pie de página y numeración. Si existen campos generados de presentación (`presentationTitle`, `presentationSubtitle`, `slides`, `oralScript`, `visualSuggestions`, `closingMessage`), se usan como base. Si no existen, se arma una presentación básica a partir de los datos del proyecto, la ficha generada, evidencias, recursos, producciones y sugerencias de reutilización.
+
+Reglas de la exportación:
+
+- Generar un archivo `.pptx` real, editable en PowerPoint o LibreOffice.
+- No mostrar `undefined`, `null`, `NaN` ni `[object Object]`.
+- Usar textos breves y entre 3 y 5 bullets por diapositiva.
+- Incluir evidencias principales si hay links o archivos asociados.
+- Incluir resumen de materiales generados si existen juegos o recursos visuales.
+
+---
+
 ## Evidencias y archivos
 
 Cada proyecto puede tener evidencias asociadas.
@@ -720,6 +761,7 @@ POST /api/projects/:id/publish
 POST /api/projects/:id/archive
 POST /api/projects/:id/duplicate
 GET /api/projects/:id/pdf
+GET /api/projects/:id/pptx
 ```
 
 ### Banco institucional

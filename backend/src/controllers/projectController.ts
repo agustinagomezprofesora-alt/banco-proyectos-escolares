@@ -4,6 +4,7 @@ import { projectSchema } from '../validators/projectValidator'
 import { AuthRequest } from '../middlewares/authMiddleware'
 import { generateProjectActivities, generateProjectFicha, generateProjectGames, generateProjectPresentation } from '../services/aiService'
 import { generateProjectPdf } from '../services/pdfService'
+import { generateProjectPresentationPptx } from '../services/pptxService'
 
 const authorSelect = {
   id: true,
@@ -83,7 +84,7 @@ const baseFields = [
 ] as const
 
 const isAdmin = (req: AuthRequest) => req.user?.role === 'ADMIN'
-const reviewStatuses = ['En revisión', 'En revision', 'En revisiÃ³n']
+const reviewStatuses = ['En revisión', 'En revision']
 
 const requireAdmin = (req: AuthRequest, res: Response) => {
   if (!isAdmin(req)) {
@@ -206,6 +207,33 @@ export const downloadProjectPdf = async (req: AuthRequest, res: Response) => {
     return res.send(pdf)
   } catch (error) {
     return res.status(500).json({ message: 'No se pudo generar el PDF.' })
+  }
+}
+
+export const downloadProjectPptx = async (req: AuthRequest, res: Response) => {
+  const id = Number(req.params.id)
+  const project = await prisma.project.findUnique({
+    where: { id },
+    include: projectInclude
+  })
+
+  if (!project) {
+    return res.status(404).json({ message: 'Proyecto no encontrado' })
+  }
+
+  if (!canDownloadProject(req, project)) {
+    return res.status(403).json({ message: 'No tenés permisos para realizar esta acción.' })
+  }
+
+  try {
+    const settings = await (prisma as any).institutionSettings.findFirst({ orderBy: { id: 'asc' } })
+    const pptx = await generateProjectPresentationPptx(project, settings)
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+    res.setHeader('Content-Disposition', `attachment; filename="presentación-proyecto-${project.id}.pptx"`)
+    res.setHeader('Content-Length', pptx.length)
+    return res.send(pptx)
+  } catch (error) {
+    return res.status(500).json({ message: 'No se pudo generar el PowerPoint.' })
   }
 }
 
@@ -445,7 +473,7 @@ export const generateGames = async (req: AuthRequest, res: Response) => {
   }
 
   if (!canAccessProject(req, project.authorId)) {
-    return res.status(403).json({ message: 'No tenÃ©s permisos para generar juegos de este proyecto.' })
+    return res.status(403).json({ message: 'No tenés permisos para generar juegos de este proyecto.' })
   }
 
   try {
@@ -472,7 +500,7 @@ export const generatePresentation = async (req: AuthRequest, res: Response) => {
   }
 
   if (!canAccessProject(req, project.authorId)) {
-    return res.status(403).json({ message: 'No tenÃ©s permisos para generar presentaciÃ³n de este proyecto.' })
+    return res.status(403).json({ message: 'No tenés permisos para generar presentación de este proyecto.' })
   }
 
   try {
@@ -487,7 +515,7 @@ export const generatePresentation = async (req: AuthRequest, res: Response) => {
 
     return res.json({ ...updated, generationMode: result.generationMode })
   } catch (error) {
-    return res.status(500).json({ message: 'Error generando presentaciÃ³n del proyecto' })
+    return res.status(500).json({ message: 'Error generando presentación del proyecto' })
   }
 }
 

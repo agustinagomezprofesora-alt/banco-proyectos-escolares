@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { listProjects, getProject, createProject, updateProject, deleteProject, generateFicha, generateActivities, generateGames, generatePresentation, submitForReview, getPublishedProjects, getPublishedProject, duplicateProject, publishProject, archiveProject, downloadProjectPdf } from '../controllers/projectController'
+import { listProjects, getProject, createProject, updateProject, deleteProject, generateFicha, generateActivities, generateGames, generatePresentation, submitForReview, getPublishedProjects, getPublishedProject, duplicateProject, publishProject, archiveProject, downloadProjectPdf, downloadProjectPptx } from '../controllers/projectController'
 import { createProjectLink, listProjectFiles, listProjectLinks, uploadProjectFile } from '../controllers/evidenceController'
 import { uploadProjectFile as uploadProjectFileMiddleware } from '../services/uploadService'
 
@@ -21,6 +21,7 @@ router.get('/published', getPublishedProjects)
 router.get('/published/:id', getPublishedProject)
 router.get('/', listProjects)
 router.get('/:id/pdf', downloadProjectPdf)
+router.get('/:id/pptx', downloadProjectPptx)
 router.get('/:id/links', listProjectLinks)
 router.post('/:id/links', createProjectLink)
 router.get('/:id/files', listProjectFiles)

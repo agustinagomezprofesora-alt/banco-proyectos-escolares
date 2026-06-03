@@ -209,7 +209,7 @@ export const generateBackupZip = async (options: BackupOptions = {}): Promise<Ge
 
   const generatedAt = new Date()
   const timestamp = buildBackupTimestamp()
-  const fileNamePrefix = options.fileNamePrefix || 'backup-memoria-pedagogica'
+  const fileNamePrefix = options.fileNamePrefix || 'backup-memoria-pedagógica'
   const fileName = `${fileNamePrefix}-${timestamp}.zip`
   const databaseStat = await fs.promises.stat(databasePath)
   const entries: ZipEntry[] = [{

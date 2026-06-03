@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { downloadProjectPdf, fetchPublishedProject, duplicateProject } from '../api/api'
+import { downloadProjectPdf, downloadProjectPptx, fetchPublishedProject, duplicateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import { Project } from '../types'
 import { getErrorMessage } from '../utils/ui'
@@ -15,6 +15,7 @@ export default function BankProjectDetailPage() {
   const [error, setError] = useState('')
   const [duplicating, setDuplicating] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [downloadingPptx, setDownloadingPptx] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -61,6 +62,19 @@ export default function BankProjectDetailPage() {
     }
   }
 
+  const handleDownloadPptx = async () => {
+    if (!project) return
+    setDownloadingPptx(true)
+    setError('')
+    try {
+      await downloadProjectPptx(project.id)
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'No se pudo generar la presentación.'))
+    } finally {
+      setDownloadingPptx(false)
+    }
+  }
+
   if (loading) return <div className="container"><p>Cargando proyecto...</p></div>
   if (!project) return <div className="container"><div className="empty-state"><p>Proyecto no encontrado.</p></div></div>
 
@@ -91,20 +105,20 @@ export default function BankProjectDetailPage() {
   const gameSections: Array<[string, string | null | undefined]> = [
     ['Quiz', project.quizQuestions],
     ['Verdadero/Falso', project.trueFalse],
-    ['Opcion multiple', project.multipleChoice],
+    ['Opción múltiple', project.multipleChoice],
     ['Sopa de letras', project.wordSearch],
     ['Crucigrama', project.crossword],
     ['Memotest', project.memoryGame],
     ['Bingo', project.bingoConcepts],
-    ['Tarjetas desafio', project.challengeCards],
+    ['Tarjetas desafío', project.challengeCards],
     ['Juego de roles', project.rolePlayingGame],
-    ['Reflexion', project.reflectionGame]
+    ['Reflexión', project.reflectionGame]
   ]
   const visibleGameSections = gameSections.filter(([, value]) => Boolean(value?.trim()))
 
   const presentationSections: Array<[string, string | null | undefined]> = [
-    ['Titulo de la presentacion', project.presentationTitle],
-    ['Subtitulo', project.presentationSubtitle],
+    ['Título de la presentación', project.presentationTitle],
+    ['Subtítulo', project.presentationSubtitle],
     ['Estructura de diapositivas', project.slides],
     ['Guion oral', project.oralScript],
     ['Sugerencias visuales', project.visualSuggestions],
@@ -128,6 +142,9 @@ export default function BankProjectDetailPage() {
             <>
               <button onClick={handleDownloadPdf} disabled={downloading}>
                 {downloading ? 'Descargando PDF...' : 'Descargar PDF'}
+              </button>
+              <button className="btn-view" onClick={handleDownloadPptx} disabled={downloadingPptx}>
+                {downloadingPptx ? 'Generando presentación...' : 'Descargar presentación PowerPoint'}
               </button>
               <button className="primary-btn" onClick={handleDuplicate} disabled={duplicating}>
                 {duplicating ? 'Duplicando proyecto...' : 'Usar como base'}
@@ -195,7 +212,7 @@ export default function BankProjectDetailPage() {
       {visibleGameSections.length > 0 && (
         <section className="detail-section">
           <h2>Juegos educativos</h2>
-          <p className="muted-text">Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.</p>
+          <p className="muted-text">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</p>
           {visibleGameSections.map(([title, value]) => (
             <section key={title}>
               <h2>{title}</h2>
@@ -207,8 +224,8 @@ export default function BankProjectDetailPage() {
 
       {visiblePresentationSections.length > 0 && (
         <section className="detail-section">
-          <h2>Presentacion del proyecto</h2>
-          <p className="muted-text">Contenido generado con asistencia de IA. RevisÃ¡ y ajustÃ¡ antes de usar.</p>
+          <h2>Presentación del proyecto</h2>
+          <p className="muted-text">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</p>
           {visiblePresentationSections.map(([title, value]) => (
             <section key={title}>
               <h2>{title}</h2>
