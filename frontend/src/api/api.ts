@@ -1,4 +1,4 @@
-import { InstitutionSettings, Project, ProjectFile, ProjectLink, ProjectStats } from '../types'
+import { GeneratedProjectResponse, InstitutionSettings, Project, ProjectFile, ProjectLink, ProjectStats } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
 
@@ -119,7 +119,10 @@ export const duplicateProject = (id: number) =>
   request<Project>(`/projects/${id}/duplicate`, { method: 'POST' })
 
 export const generateFicha = (id: number) =>
-  request<Project>(`/projects/${id}/generate`, { method: 'POST' })
+  request<GeneratedProjectResponse>(`/projects/${id}/generate`, { method: 'POST' })
+
+export const generateActivities = (id: number) =>
+  request<GeneratedProjectResponse>(`/projects/${id}/generate-activities`, { method: 'POST' })
 
 export const submitProjectReview = (id: number) =>
   request<Project>(`/projects/${id}/submit-review`, { method: 'POST' })

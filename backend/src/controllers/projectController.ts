@@ -2,7 +2,7 @@ import { Response } from 'express'
 import { prisma } from '../config/prisma'
 import { projectSchema } from '../validators/projectValidator'
 import { AuthRequest } from '../middlewares/authMiddleware'
-import { generateProjectFicha } from '../services/aiService'
+import { generateProjectActivities, generateProjectFicha } from '../services/aiService'
 import { generateProjectPdf } from '../services/pdfService'
 
 const authorSelect = {
@@ -31,6 +31,19 @@ const fichaFields = [
   'suggestedTags'
 ] as const
 
+const activityFields = [
+  'introActivities',
+  'developmentActivities',
+  'closingActivities',
+  'assessmentCriteria',
+  'rubric',
+  'interdisciplinarySuggestions',
+  'adaptations',
+  'requiredResources',
+  'estimatedTimeline',
+  'studentReflectionQuestions'
+] as const
+
 const baseFields = [
   'title',
   'description',
@@ -41,7 +54,8 @@ const baseFields = [
   'link',
   'isReusable',
   'status',
-  ...fichaFields
+  ...fichaFields,
+  ...activityFields
 ] as const
 
 const isAdmin = (req: AuthRequest) => req.user?.role === 'ADMIN'
@@ -74,6 +88,37 @@ const buildUpdateData = (data: Record<string, any>) => {
 
   return updateData
 }
+
+const getProjectEvidenceForAI = async (projectId: number) => {
+  const [links, files] = await Promise.all([
+    (prisma as any).projectLink.findMany({ where: { projectId }, select: { label: true, url: true } }),
+    (prisma as any).projectFile.findMany({ where: { projectId }, select: { originalName: true } })
+  ])
+
+  return { links, files }
+}
+
+const buildAIInput = (project: any, evidence: { links: Array<{ label: string; url: string }>; files: Array<{ originalName: string }> }) => ({
+  title: project.title,
+  description: project.description,
+  teacher: project.teacher,
+  course: project.course,
+  area: project.area,
+  experienceType: project.experienceType,
+  link: project.link,
+  isReusable: project.isReusable,
+  generatedSummary: project.generatedSummary,
+  objectives: project.objectives,
+  mainActivities: project.mainActivities,
+  resourcesUsed: project.resourcesUsed,
+  finalProducts: project.finalProducts,
+  evidenceDescription: project.evidenceDescription,
+  reuseSuggestions: project.reuseSuggestions,
+  improvementSuggestions: project.improvementSuggestions,
+  suggestedTags: project.suggestedTags,
+  links: evidence.links,
+  files: evidence.files
+})
 
 export const listProjects = async (req: AuthRequest, res: Response) => {
   const projects = await prisma.project.findMany({
@@ -313,29 +358,48 @@ export const generateFicha = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const ficha = await generateProjectFicha({
-      title: project.title,
-      description: project.description,
-      teacher: project.teacher,
-      course: project.course,
-      area: project.area,
-      experienceType: project.experienceType,
-      link: project.link,
-      isReusable: project.isReusable
-    })
+    const evidence = await getProjectEvidenceForAI(id)
+    const result = await generateProjectFicha(buildAIInput(project, evidence))
 
     const updated = await prisma.project.update({
       where: { id },
       data: {
-        ...ficha,
+        ...result.ficha,
         status: 'Borrador generado'
       },
       include: projectInclude
     })
 
-    return res.json(updated)
+    return res.json({ ...updated, generationMode: result.generationMode })
   } catch (error) {
     return res.status(500).json({ message: 'Error generando ficha' })
+  }
+}
+
+export const generateActivities = async (req: AuthRequest, res: Response) => {
+  const id = Number(req.params.id)
+  const project = await prisma.project.findUnique({ where: { id } })
+  if (!project) {
+    return res.status(404).json({ message: 'Proyecto no encontrado' })
+  }
+
+  if (!canAccessProject(req, project.authorId)) {
+    return res.status(403).json({ message: 'No tenés permisos para generar actividades de este proyecto.' })
+  }
+
+  try {
+    const evidence = await getProjectEvidenceForAI(id)
+    const result = await generateProjectActivities(buildAIInput(project, evidence))
+
+    const updated = await prisma.project.update({
+      where: { id },
+      data: result.activities,
+      include: projectInclude
+    })
+
+    return res.json({ ...updated, generationMode: result.generationMode })
+  } catch (error) {
+    return res.status(500).json({ message: 'Error generando actividades' })
   }
 }
 

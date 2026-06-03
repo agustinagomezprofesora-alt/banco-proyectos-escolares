@@ -19,5 +19,15 @@ export const projectSchema = z.object({
   evidenceDescription: z.string().optional().nullable(),
   reuseSuggestions: z.string().optional().nullable(),
   improvementSuggestions: z.string().optional().nullable(),
-  suggestedTags: z.string().optional().nullable()
+  suggestedTags: z.string().optional().nullable(),
+  introActivities: z.string().optional().nullable(),
+  developmentActivities: z.string().optional().nullable(),
+  closingActivities: z.string().optional().nullable(),
+  assessmentCriteria: z.string().optional().nullable(),
+  rubric: z.string().optional().nullable(),
+  interdisciplinarySuggestions: z.string().optional().nullable(),
+  adaptations: z.string().optional().nullable(),
+  requiredResources: z.string().optional().nullable(),
+  estimatedTimeline: z.string().optional().nullable(),
+  studentReflectionQuestions: z.string().optional().nullable()
 })

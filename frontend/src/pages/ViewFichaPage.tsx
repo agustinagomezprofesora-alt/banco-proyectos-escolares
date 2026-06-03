@@ -1,8 +1,8 @@
 import { useState, useEffect, FormEvent } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { downloadProjectPdf, fetchProject, submitProjectReview, updateProject } from '../api/api'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { downloadProjectPdf, fetchProject, generateActivities, submitProjectReview, updateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
-import { Project } from '../types'
+import { GenerationMode, Project } from '../types'
 import { getErrorMessage, getStatusBadgeClass, normalizeStatus } from '../utils/ui'
 import EvidenceSection from '../components/EvidenceSection'
 
@@ -17,10 +17,25 @@ const fichaFields: Array<{ key: keyof Project; title: string }> = [
   { key: 'improvementSuggestions', title: 'Sugerencias de mejora' }
 ]
 
+const activityFields: Array<{ key: keyof Project; title: string }> = [
+  { key: 'introActivities', title: 'Actividades de inicio' },
+  { key: 'developmentActivities', title: 'Actividades de desarrollo' },
+  { key: 'closingActivities', title: 'Actividades de cierre' },
+  { key: 'assessmentCriteria', title: 'Criterios de evaluación' },
+  { key: 'rubric', title: 'Rúbrica' },
+  { key: 'interdisciplinarySuggestions', title: 'Sugerencias interdisciplinarias' },
+  { key: 'adaptations', title: 'Adecuaciones' },
+  { key: 'requiredResources', title: 'Recursos necesarios' },
+  { key: 'estimatedTimeline', title: 'Cronograma estimado' },
+  { key: 'studentReflectionQuestions', title: 'Preguntas de reflexión' }
+]
+
 export default function ViewFichaPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
+  const generationMode = (location.state as { generationMode?: GenerationMode } | null)?.generationMode
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
@@ -28,6 +43,8 @@ export default function ViewFichaPage() {
   const [saving, setSaving] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [generatingActivities, setGeneratingActivities] = useState(false)
+  const [activitiesMode, setActivitiesMode] = useState<GenerationMode | undefined>(undefined)
   const [editData, setEditData] = useState<Partial<Project>>({})
 
   useEffect(() => {
@@ -90,6 +107,22 @@ export default function ViewFichaPage() {
     }
   }
 
+  const handleGenerateActivities = async () => {
+    if (!project) return
+    setGeneratingActivities(true)
+    setError('')
+    try {
+      const updated = await generateActivities(project.id)
+      setProject(updated)
+      setEditData(updated)
+      setActivitiesMode(updated.generationMode)
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'No se pudieron generar las actividades.'))
+    } finally {
+      setGeneratingActivities(false)
+    }
+  }
+
   if (loading) return <div className="container"><p>Cargando proyecto...</p></div>
   if (!project) return <div className="container"><div className="empty-state"><p>Proyecto no encontrado.</p></div></div>
   if (user?.role !== 'ADMIN' && user?.id !== project.author.id) {
@@ -97,6 +130,7 @@ export default function ViewFichaPage() {
   }
 
   const canManageEvidence = user?.role === 'ADMIN' || (user?.id === project.author.id && project.status !== 'Archivado')
+  const hasActivities = activityFields.some((field) => Boolean(String(project[field.key] || '').trim()))
 
   return (
     <div className="container">
@@ -113,10 +147,23 @@ export default function ViewFichaPage() {
           {project.status === 'Borrador generado' && (
             <button onClick={() => setEditing(!editing)}>{editing ? 'Cancelar' : 'Editar ficha'}</button>
           )}
+          <button onClick={handleGenerateActivities} disabled={generatingActivities}>
+            {generatingActivities ? 'Generando actividades...' : 'Generar actividades'}
+          </button>
         </div>
       </header>
 
       {error && <div className="error">{error}</div>}
+      {generationMode && (
+        <div className="success">
+          {generationMode === 'ai'
+            ? 'Ficha generada con asistencia de IA. Revisá antes de enviar.'
+            : 'Ficha generada automáticamente. Revisá antes de enviar.'}
+        </div>
+      )}
+      {activitiesMode && (
+        <div className="success">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</div>
+      )}
 
       {editing ? (
         <form onSubmit={handleSave} className="form-ficha-edit">
@@ -134,6 +181,13 @@ export default function ViewFichaPage() {
             Etiquetas sugeridas
             <input value={editData.suggestedTags || ''} onChange={(e) => setEditData({ ...editData, suggestedTags: e.target.value })} />
           </label>
+          <h2>Actividades pedagógicas</h2>
+          {activityFields.map((field) => (
+            <label key={String(field.key)}>
+              {field.title}
+              <textarea value={String(editData[field.key] || '')} onChange={(e) => setEditData({ ...editData, [field.key]: e.target.value })} />
+            </label>
+          ))}
           <button type="submit" disabled={saving}>{saving ? 'Guardando cambios...' : 'Guardar cambios'}</button>
         </form>
       ) : (
@@ -162,6 +216,23 @@ export default function ViewFichaPage() {
               <div className="tags">
                 {project.suggestedTags.split(', ').map((tag) => <span key={tag} className="tag">{tag}</span>)}
               </div>
+            </section>
+          )}
+
+          {hasActivities && (
+            <section>
+              <h2>Actividades pedagógicas</h2>
+              <div className="success">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</div>
+              {activityFields.map((field) => {
+                const value = String(project[field.key] || '').trim()
+                if (!value) return null
+                return (
+                  <section key={String(field.key)}>
+                    <h2>{field.title}</h2>
+                    <p style={{ whiteSpace: 'pre-wrap' }}>{value}</p>
+                  </section>
+                )
+              })}
             </section>
           )}
 

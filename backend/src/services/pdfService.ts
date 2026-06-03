@@ -22,6 +22,16 @@ type PdfProject = {
   reuseSuggestions?: string | null
   improvementSuggestions?: string | null
   suggestedTags?: string | null
+  introActivities?: string | null
+  developmentActivities?: string | null
+  closingActivities?: string | null
+  assessmentCriteria?: string | null
+  rubric?: string | null
+  interdisciplinarySuggestions?: string | null
+  adaptations?: string | null
+  requiredResources?: string | null
+  estimatedTimeline?: string | null
+  studentReflectionQuestions?: string | null
   links?: Array<{ label: string; url: string }>
   files?: Array<{ originalName: string; url?: string | null }>
 }
@@ -200,6 +210,31 @@ export const generateProjectPdf = async (project: PdfProject, settings?: PdfSett
         .text('Ficha institucional', { width: contentWidth })
 
       visibleSections.forEach(([title, content]) => addSection(doc, title, content, contentWidth))
+    }
+
+    const activitySections: Array<[string, unknown]> = [
+      ['Actividades de inicio', project.introActivities],
+      ['Actividades de desarrollo', project.developmentActivities],
+      ['Actividades de cierre', project.closingActivities],
+      ['Criterios de evaluación', project.assessmentCriteria],
+      ['Rúbrica', project.rubric],
+      ['Sugerencias interdisciplinarias', project.interdisciplinarySuggestions],
+      ['Adecuaciones', project.adaptations],
+      ['Recursos necesarios', project.requiredResources],
+      ['Cronograma estimado', project.estimatedTimeline],
+      ['Preguntas de reflexión', project.studentReflectionQuestions]
+    ]
+    const visibleActivitySections = activitySections.filter(([, content]) => hasValue(content))
+
+    if (visibleActivitySections.length > 0) {
+      doc.moveDown(0.8)
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(13)
+        .fillColor('#0f172a')
+        .text('Actividades pedagógicas', { width: contentWidth })
+
+      visibleActivitySections.forEach(([title, content]) => addSection(doc, title, content, contentWidth))
     }
 
     const evidenceItems = [

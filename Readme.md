@@ -20,6 +20,7 @@ Fases implementadas:
 - **Fase 6:** Generación de PDF institucional funcionando correctamente.
 - **Fase 7:** Evidencias, múltiples links y archivos adjuntos por proyecto.
 - **Fase 8:** Configuración institucional, uso de settings en la app/PDF, respaldo local SQLite y refuerzo de seguridad en archivos.
+- **Fase 9:** Integración de IA real gratuita o de bajo costo para generar fichas y actividades pedagógicas, manteniendo fallback mock.
 
 ---
 
@@ -122,8 +123,16 @@ NODE_ENV="development"
 UPLOAD_DIR="uploads"
 MAX_FILE_SIZE_MB=10
 AI_PROVIDER="mock"
-OPENAI_API_KEY=""
 GEMINI_API_KEY=""
+GEMINI_MODEL="gemini-1.5-flash"
+DEEPSEEK_API_KEY=""
+DEEPSEEK_MODEL="deepseek-chat"
+GROQ_API_KEY=""
+GROQ_MODEL="llama-3.1-8b-instant"
+OPENROUTER_API_KEY=""
+OPENROUTER_MODEL="openrouter/free"
+OPENAI_API_KEY=""
+OPENAI_MODEL="gpt-4o-mini"
 OLLAMA_BASE_URL="http://localhost:11434"
 INSTITUTION_NAME="Escuela / Institución"
 APP_NAME="Memoria Pedagógica Digital"
@@ -357,6 +366,19 @@ Campos generados por la ficha institucional, si existen:
 - improvementSuggestions
 - suggestedTags
 
+Campos de actividades pedagógicas, si existen:
+
+- introActivities
+- developmentActivities
+- closingActivities
+- assessmentCriteria
+- rubric
+- interdisciplinarySuggestions
+- adaptations
+- requiredResources
+- estimatedTimeline
+- studentReflectionQuestions
+
 Estados usados:
 
 - Cargado
@@ -429,11 +451,13 @@ El docente puede:
 5. Guardar el proyecto.
 6. Generar ficha institucional automáticamente.
 7. Editar la ficha generada.
-8. Agregar links y archivos como evidencias.
-9. Enviar a revisión.
-10. Ver sus proyectos por estado.
-11. Descargar PDF de proyectos propios.
-12. Usar proyectos publicados como base para una nueva experiencia.
+8. Generar actividades pedagógicas vinculadas al proyecto.
+9. Editar la ficha y las actividades generadas.
+10. Agregar links y archivos como evidencias.
+11. Enviar a revisión.
+12. Ver sus proyectos por estado.
+13. Descargar PDF de proyectos propios.
+14. Usar proyectos publicados como base para una nueva experiencia.
 
 ---
 
@@ -486,7 +510,7 @@ Cargado
 
 ## Generación mock de ficha institucional
 
-La app incluye una generación automática simulada, sin IA real todavía.
+La app incluye una generación automática simulada como fallback.
 
 El servicio genera campos como:
 
@@ -501,7 +525,35 @@ El servicio genera campos como:
 - Recomendaciones de mejora.
 - Etiquetas sugeridas.
 
-La generación real con IA queda como futura mejora.
+## IA para fichas y actividades
+
+La app puede generar fichas institucionales y actividades pedagógicas con asistencia de IA cuando el backend tiene proveedor y clave configurados.
+
+Variables principales:
+
+```env
+AI_PROVIDER="mock"
+GEMINI_API_KEY=""
+GEMINI_MODEL="gemini-1.5-flash"
+DEEPSEEK_API_KEY=""
+DEEPSEEK_MODEL="deepseek-chat"
+GROQ_API_KEY=""
+GROQ_MODEL="llama-3.1-8b-instant"
+OPENROUTER_API_KEY=""
+OPENROUTER_MODEL="openrouter/free"
+```
+
+Valores de `AI_PROVIDER`:
+
+- `mock`: usa siempre generación automática local.
+- `gemini`: usa Gemini si `GEMINI_API_KEY` está configurada.
+- `deepseek`: usa DeepSeek si `DEEPSEEK_API_KEY` está configurada.
+- `groq`: usa Groq si `GROQ_API_KEY` está configurada.
+- `openrouter`: usa OpenRouter si `OPENROUTER_API_KEY` está configurada.
+
+Si falta la API key del proveedor elegido, la app usa mock. Si la API falla o devuelve una respuesta inválida, la app usa fallback mock para no romper el flujo docente.
+
+La IA es asistiva: la ficha y las actividades generadas deben revisarse y editarse antes de enviar a revisión o usar en clase. El sistema no publica automáticamente contenido generado por IA.
 
 ---
 
@@ -518,6 +570,7 @@ El PDF incluye:
 - Datos principales.
 - Descripción.
 - Ficha institucional generada.
+- Actividades pedagógicas generadas, si existen.
 - Evidencias y recursos si existen.
 - Pie de página.
 - Numeración correcta.
@@ -616,6 +669,7 @@ PUT /api/projects/:id
 DELETE /api/projects/:id
 
 POST /api/projects/:id/generate
+POST /api/projects/:id/generate-activities
 POST /api/projects/:id/submit-review
 POST /api/projects/:id/publish
 POST /api/projects/:id/archive
@@ -853,14 +907,6 @@ Abrir proyecto
 
 ## Próximas fases sugeridas
 
-### Fase 9: IA real
-
-- Conectar OpenAI, Gemini u Ollama.
-- Mantener fallback mock.
-- No depender exclusivamente de la IA.
-- Evitar inventar datos.
-- Permitir revisar siempre antes de guardar.
-
 ### Fase 10: Estadísticas institucionales
 
 - Proyectos por área.
@@ -891,6 +937,6 @@ Abrir proyecto
 
 ## Nota final
 
-Este README refleja el estado funcional avanzado del proyecto hasta la Fase 8.
+Este README refleja el estado funcional avanzado del proyecto hasta la Fase 9.
 
 Si se retoma el desarrollo con Codex, usar este README como referencia actualizada y no el plan inicial viejo.

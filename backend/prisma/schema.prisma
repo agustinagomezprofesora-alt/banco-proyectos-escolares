@@ -48,6 +48,16 @@ model Project {
   suggestedTags             String?
   observations              String?
   additionalLink            String?
+  introActivities           String?
+  developmentActivities     String?
+  closingActivities         String?
+  assessmentCriteria        String?
+  rubric                    String?
+  interdisciplinarySuggestions String?
+  adaptations               String?
+  requiredResources         String?
+  estimatedTimeline         String?
+  studentReflectionQuestions String?
 
   links                     ProjectLink[]
   files                     ProjectFile[]

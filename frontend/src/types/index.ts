@@ -30,6 +30,16 @@ export interface Project {
   improvementSuggestions?: string | null
   suggestedTags?: string | null
   observations?: string | null
+  introActivities?: string | null
+  developmentActivities?: string | null
+  closingActivities?: string | null
+  assessmentCriteria?: string | null
+  rubric?: string | null
+  interdisciplinarySuggestions?: string | null
+  adaptations?: string | null
+  requiredResources?: string | null
+  estimatedTimeline?: string | null
+  studentReflectionQuestions?: string | null
   links?: ProjectLink[]
   files?: ProjectFile[]
   author: {
@@ -38,6 +48,12 @@ export interface Project {
     email: string
     role: string
   }
+}
+
+export type GenerationMode = 'mock' | 'ai' | 'fallback'
+
+export type GeneratedProjectResponse = Project & {
+  generationMode?: GenerationMode
 }
 
 export interface ProjectLink {

@@ -50,8 +50,8 @@ export default function ProjectsPage() {
     setGeneratingId(id)
     setError('')
     try {
-      await generateFicha(id)
-      navigate(`/projects/${id}/generated`)
+      const generated = await generateFicha(id)
+      navigate(`/projects/${id}/generated`, { state: { generationMode: generated.generationMode } })
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudo generar la ficha.'))
     } finally {
@@ -128,7 +128,7 @@ export default function ProjectsPage() {
               <div className="project-actions">
                 {project.status === 'Cargado' && (
                   <button onClick={() => handleGenerateFicha(project.id)} className="btn-generate" disabled={generatingId === project.id}>
-                    {generatingId === project.id ? 'Generando ficha...' : 'Generar ficha'}
+                    {generatingId === project.id ? 'Generando ficha institucional...' : 'Generar ficha'}
                   </button>
                 )}
                 <button onClick={() => navigate(`/projects/${project.id}`)} className="btn-view">Ver ficha</button>
