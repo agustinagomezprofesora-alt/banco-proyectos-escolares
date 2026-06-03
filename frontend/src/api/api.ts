@@ -232,3 +232,87 @@ export const downloadProjectPdf = async (id: number) => {
     throw { message: 'No se pudo descargar el PDF.' }
   }
 }
+
+const getDownloadFileName = (contentDisposition: string | null, fallback: string) => {
+  const match = contentDisposition?.match(/filename="?([^"]+)"?/)
+  return match?.[1] || fallback
+}
+
+export const downloadSystemBackup = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/admin/backup/download`, {
+      headers: buildAuthHeaders()
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearSession()
+        sessionStorage.setItem('memoria_session_message', 'La sesiÃ³n expirÃ³. IniciÃ¡ sesiÃ³n nuevamente.')
+        window.location.assign('/login')
+      }
+
+      const text = await response.text()
+      let payload: any = {}
+      try {
+        payload = text ? JSON.parse(text) : {}
+      } catch {
+        payload = { message: text }
+      }
+      throw { message: friendlyMessage(payload?.message || 'No se pudo generar el backup.') }
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = getDownloadFileName(
+      response.headers.get('Content-Disposition'),
+      'backup-memoria-pedagogica.zip'
+    )
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error: any) {
+    if (error?.message) throw error
+    throw { message: 'No se pudo generar el backup.' }
+  }
+}
+
+export const restoreSystemBackup = async (file: File) => {
+  const formData = new FormData()
+  formData.append('backup', file)
+
+  try {
+    const response = await fetch(`${API_BASE}/admin/backup/restore`, {
+      method: 'POST',
+      headers: buildAuthHeaders(),
+      body: formData
+    })
+
+    const text = await response.text()
+    let payload: any = {}
+    if (text) {
+      try {
+        payload = JSON.parse(text)
+      } catch {
+        payload = { message: text }
+      }
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearSession()
+        sessionStorage.setItem('memoria_session_message', 'La sesiÃ³n expirÃ³. IniciÃ¡ sesiÃ³n nuevamente.')
+        window.location.assign('/login')
+      }
+
+      throw { ...payload, message: friendlyMessage(payload?.message || 'No se pudo restaurar el backup.') }
+    }
+
+    return payload as { message: string; preRestoreBackup: string; warning?: string }
+  } catch (error: any) {
+    if (error?.message) throw { ...error, message: friendlyMessage(error.message) }
+    throw { message: 'No se pudo restaurar el backup.' }
+  }
+}

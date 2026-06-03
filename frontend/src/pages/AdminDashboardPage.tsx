@@ -35,6 +35,7 @@ export default function AdminDashboardPage() {
         <div>
           <button className="primary-btn" onClick={() => navigate('/admin/projects')}>Gestión de proyectos</button>
           <button onClick={() => navigate('/admin/settings')}>Configuración institucional</button>
+          <button onClick={() => navigate('/admin/backup')}>Respaldo</button>
         </div>
       </header>
 
@@ -78,6 +79,7 @@ export default function AdminDashboardPage() {
           <div className="admin-actions-grid">
             <button onClick={() => navigate('/admin/projects')}>Todos los proyectos</button>
             <button onClick={() => navigate('/admin/settings')}>Configuración institucional</button>
+            <button onClick={() => navigate('/admin/backup')}>Respaldo</button>
             <button onClick={() => navigate('/admin/projects?status=Publicado')}>Proyectos publicados</button>
             <button onClick={() => navigate('/admin/projects?status=Archivado')}>Proyectos archivados</button>
             <button onClick={() => navigate('/bank')}>Banco de proyectos</button>

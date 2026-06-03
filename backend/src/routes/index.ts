@@ -3,6 +3,7 @@ import authRoutes from './authRoutes'
 import projectRoutes from './projectRoutes'
 import evidenceRoutes from './evidenceRoutes'
 import settingsRoutes from './settingsRoutes'
+import adminRoutes from './adminRoutes'
 import { authMiddleware } from '../middlewares/authMiddleware'
 import { getPublishedProject, getPublishedProjects, getStats } from '../controllers/projectController'
 
@@ -13,6 +14,7 @@ router.use('/settings', settingsRoutes)
 router.get('/projects/published', getPublishedProjects)
 router.get('/projects/published/:id', getPublishedProject)
 router.get('/stats', authMiddleware, getStats)
+router.use('/admin', authMiddleware, adminRoutes)
 router.use('/', authMiddleware, evidenceRoutes)
 router.use('/projects', authMiddleware, projectRoutes)
 

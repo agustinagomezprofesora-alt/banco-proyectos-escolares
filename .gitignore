@@ -10,4 +10,5 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 backend/prisma/*.db-journal
 backend/backups/*.db
+backend/backups/*.zip
 backend/dev-server.*.log

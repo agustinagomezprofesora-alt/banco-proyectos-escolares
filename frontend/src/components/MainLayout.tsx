@@ -26,6 +26,7 @@ export default function MainLayout() {
           {user?.role === 'ADMIN' && <NavLink to="/admin">Administración</NavLink>}
           {user?.role === 'ADMIN' && <NavLink to="/admin/projects">Gestión de proyectos</NavLink>}
           {user?.role === 'ADMIN' && <NavLink to="/admin/settings">Configuración institucional</NavLink>}
+          {user?.role === 'ADMIN' && <NavLink to="/admin/backup">Respaldo</NavLink>}
         </div>
         <div className="nav-auth">
           {user ? (

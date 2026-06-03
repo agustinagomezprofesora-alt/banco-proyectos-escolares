@@ -1,44 +1,22 @@
-import fs from 'fs'
 import path from 'path'
+import dotenv from 'dotenv'
+import { generateBackupZip } from '../src/services/backupService'
 
 const backendRoot = process.cwd()
-const databasePath = path.join(backendRoot, 'prisma', 'dev.db')
-const backupsDir = path.join(backendRoot, 'backups')
-
-const pad = (value: number) => String(value).padStart(2, '0')
-
-const buildTimestamp = () => {
-  const now = new Date()
-  return [
-    now.getFullYear(),
-    pad(now.getMonth() + 1),
-    pad(now.getDate())
-  ].join('-') + `-${pad(now.getHours())}-${pad(now.getMinutes())}`
-}
+dotenv.config({ path: path.join(backendRoot, '.env') })
 
 async function main() {
-  if (!fs.existsSync(databasePath)) {
-    throw new Error(`No se encontró la base SQLite en ${databasePath}`)
-  }
+  const backup = await generateBackupZip({
+    appName: process.env.APP_NAME,
+    backendRoot,
+    saveToBackupsDir: true
+  })
 
-  await fs.promises.mkdir(backupsDir, { recursive: true })
-
-  const timestamp = buildTimestamp()
-  let backupPath = path.join(backupsDir, `backup-${timestamp}.db`)
-  let suffix = 2
-  while (fs.existsSync(backupPath)) {
-    backupPath = path.join(backupsDir, `backup-${timestamp}-${suffix}.db`)
-    suffix += 1
-  }
-
-  await fs.promises.copyFile(databasePath, backupPath, fs.constants.COPYFILE_EXCL)
-
-  console.log('Respaldo generado correctamente.')
-  console.log(backupPath)
+  console.log(`Backup generado correctamente: ${backup.filePath}`)
 }
 
 main().catch((error) => {
-  console.error('No se pudo generar el respaldo.')
+  console.error('No se pudo generar el backup.')
   console.error(error instanceof Error ? error.message : error)
   process.exit(1)
 })

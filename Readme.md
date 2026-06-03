@@ -589,6 +589,7 @@ Rutas usadas o sugeridas:
 /admin/projects
 /admin/projects/:id
 /admin/settings
+/admin/backup
 ```
 
 `/admin/settings` permite a usuarios ADMIN gestionar la configuración institucional.
@@ -662,6 +663,15 @@ Si está implementado:
 GET /api/stats
 ```
 
+### Backup y restauración
+
+Requieren usuario logueado con rol ADMIN.
+
+```txt
+GET /api/admin/backup/download
+POST /api/admin/backup/restore
+```
+
 ---
 
 ## Seguridad y permisos
@@ -705,7 +715,15 @@ Puede:
 
 ---
 
-## Respaldo de base de datos
+## Backup y restauración
+
+Desde la app, un usuario ADMIN puede entrar a:
+
+```txt
+Administración → Respaldo
+```
+
+Para generar un backup, usar el botón **Generar y descargar backup**.
 
 Desde `backend`:
 
@@ -713,7 +731,7 @@ Desde `backend`:
 npm run backup
 ```
 
-Crea una copia local de la base SQLite actual en:
+Crea un archivo `.zip` local. Desde consola, el archivo se guarda en:
 
 ```txt
 backend/backups
@@ -722,10 +740,33 @@ backend/backups
 Ejemplo de nombre:
 
 ```txt
-backup-2026-06-02-18-30.db
+backup-memoria-pedagogica-2026-06-02-18-30.zip
 ```
 
-Conviene ejecutarlo antes de migraciones. Este respaldo local no reemplaza backups institucionales ni políticas formales de conservación de datos.
+El backup incluye:
+
+- Base SQLite actual en `database/dev.db`.
+- Carpeta `uploads` si existe.
+- `metadata.json` con fecha, nombre de la app y advertencia de seguridad.
+
+El backup no incluye:
+
+- `.env`.
+- Secretos o claves privadas.
+- `node_modules`.
+- `.git`.
+- `dist`.
+- Backups anteriores.
+
+Para restaurar desde la app, entrar a `Administración → Respaldo`, seleccionar un archivo `.zip` generado por la app, marcar la confirmación obligatoria y escribir `RESTAURAR`. La restauración reemplaza la base de datos actual y puede modificar los archivos subidos.
+
+Antes de restaurar, el sistema genera automáticamente un backup del estado actual con nombre:
+
+```txt
+pre-restore-YYYY-MM-DD-HH-mm.zip
+```
+
+Si la restauración se completa, puede ser necesario reiniciar el backend para que Prisma use correctamente el archivo SQLite restaurado. Conviene descargar y conservar un backup actual antes de restaurar. Luego es recomendable copiar el archivo generado a Google Drive, OneDrive o un disco externo. Este respaldo local no reemplaza backups institucionales ni políticas formales de conservación de datos.
 
 ---
 
