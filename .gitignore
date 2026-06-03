@@ -1,14 +1,42 @@
-node_modules
+# Dependencias
+node_modules/
+
+# Variables de entorno y credenciales
 .env
 .env.local
-dist
-build
-.next
-.vite
+.env.*.local
+CREDENCIALES.txt
+credenciales.txt
+*.secret
+*.key
+
+# Base de datos local SQLite
+backend/prisma/dev.db
+backend/dev.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos subidos y backups
+backend/uploads/
+backend/backups/
+
+# Builds
+dist/
+build/
+frontend/dist/
+backend/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operativo
 .DS_Store
-backend/uploads/*
-!backend/uploads/.gitkeep
-backend/prisma/*.db-journal
-backend/backups/*.db
-backend/backups/*.zip
-backend/dev-server.*.log
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
