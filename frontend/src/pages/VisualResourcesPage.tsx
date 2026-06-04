@@ -14,7 +14,7 @@ import {
   generateWordSearch,
   parseCrossword,
   parseMemoryGame,
-  parseBingoConcepts,
+  extractBingoConcepts,
   generateBingoCards,
   parseChallengeCards,
   parseRolePlayingGame,
@@ -122,7 +122,7 @@ export default function VisualResourcesPage() {
   )
   const crosswordItems = useMemo(() => parseCrossword(project?.crossword), [project?.crossword])
   const memoryItems = useMemo(() => parseMemoryGame(project?.memoryGame), [project?.memoryGame])
-  const bingoWords = useMemo(() => parseBingoConcepts(project?.bingoConcepts), [project?.bingoConcepts])
+  const bingoWords = useMemo(() => project ? extractBingoConcepts(project.bingoConcepts, project) : [], [project])
   const bingoCards = useMemo(() => (bingoWords.length ? generateBingoCards(bingoWords, 4, 4) : []), [bingoWords])
   const challengeItems = useMemo(() => parseChallengeCards(project?.challengeCards), [project?.challengeCards])
   const roleItems = useMemo(() => parseRolePlayingGame(project?.rolePlayingGame), [project?.rolePlayingGame])

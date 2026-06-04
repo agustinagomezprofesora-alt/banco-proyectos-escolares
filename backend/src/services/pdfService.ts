@@ -8,6 +8,8 @@ type PdfProject = {
   generatedSummary?: string | null
   teacher?: string | null
   course?: string | null
+  educationalLevel?: string | null
+  educationalCycle?: string | null
   area?: string | null
   experienceType?: string | null
   link?: string | null
@@ -197,6 +199,8 @@ export const generateProjectPdf = async (project: PdfProject, settings?: PdfSett
 
     addLabel(doc, 'Docente/s responsable/s', project.teacher, contentWidth)
     addLabel(doc, 'Curso', project.course, contentWidth)
+    addLabel(doc, 'Nivel educativo', project.educationalLevel, contentWidth)
+    addLabel(doc, 'Ciclo educativo', project.educationalCycle, contentWidth)
     addLabel(doc, 'Área', project.area, contentWidth)
     addLabel(doc, 'Tipo de experiencia', project.experienceType, contentWidth)
     addLabel(doc, 'Estado', project.status, contentWidth)

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { enrichProjectContext } from '../api/api'
-import { ProjectSource } from '../types'
+import { enrichProjectContext, fetchWebSearchStatus } from '../api/api'
+import { ProjectSource, WebSearchStatus } from '../types'
 import { getErrorMessage } from '../utils/ui'
 
 type ProjectSourcesSectionProps = {
@@ -22,6 +22,8 @@ export default function ProjectSourcesSection({
   onSourcesUpdated
 }: ProjectSourcesSectionProps) {
   const [sources, setSources] = useState<ProjectSource[]>(initialSources)
+  const [providerStatus, setProviderStatus] = useState<WebSearchStatus | null>(null)
+  const [loadingProviderStatus, setLoadingProviderStatus] = useState(canSearch)
   const [searching, setSearching] = useState(false)
   const [status, setStatus] = useState('')
   const [message, setMessage] = useState('')
@@ -32,16 +34,45 @@ export default function ProjectSourcesSection({
     setSources(initialSources)
   }, [initialSources])
 
+  useEffect(() => {
+    if (!canSearch) return
+
+    let active = true
+    setLoadingProviderStatus(true)
+    fetchWebSearchStatus()
+      .then((response) => {
+        if (active) setProviderStatus(response)
+      })
+      .catch(() => {
+        if (active) setProviderStatus(null)
+      })
+      .finally(() => {
+        if (active) setLoadingProviderStatus(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [canSearch])
+
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
   const handleSearch = async () => {
+    if (providerStatus?.configurationState === 'disabled' || providerStatus?.configurationState === 'missing_api_key') {
+      setMessage(providerStatus.message)
+      return
+    }
+
     setSearching(true)
     setMessage('')
     setError('')
-    setStatus('Detectando tema del proyecto...')
+    const initialSearchStatus = providerStatus?.provider === 'wikipedia'
+      ? 'Buscando fuentes educativas generales…'
+      : 'Detectando tema del proyecto...'
+    setStatus(initialSearchStatus)
     timers.current.forEach(clearTimeout)
     timers.current = [
-      setTimeout(() => setStatus('Buscando fuentes confiables...'), 500),
+      setTimeout(() => setStatus(providerStatus?.provider === 'wikipedia' ? initialSearchStatus : 'Buscando fuentes confiables...'), 500),
       setTimeout(() => setStatus('Analizando información encontrada...'), 1200),
       setTimeout(() => setStatus('Construyendo contexto pedagógico...'), 1900)
     ]
@@ -70,12 +101,22 @@ export default function ProjectSourcesSection({
 
       {canSearch && (
         <div className="button-group">
-          <button type="button" className="btn-generate" onClick={handleSearch} disabled={searching}>
-            {searching ? 'Buscando fuentes educativas...' : 'Buscar fuentes educativas'}
+          <button
+            type="button"
+            className="btn-generate"
+            onClick={handleSearch}
+            disabled={searching || loadingProviderStatus || Boolean(providerStatus && providerStatus.configurationState !== 'ready')}
+          >
+            {searching ? 'Buscando fuentes educativas...' : loadingProviderStatus ? 'Revisando configuración...' : 'Buscar fuentes educativas'}
           </button>
         </div>
       )}
 
+      {canSearch && providerStatus && providerStatus.configurationState !== 'ready' && (
+        <div className={providerStatus?.configurationState === 'missing_api_key' ? 'error' : 'muted-text'}>
+          {providerStatus?.message}
+        </div>
+      )}
       {status && <div className="muted-text">{status}</div>}
       {message && <div className="success">{message}</div>}
       {error && <div className="error">{error}</div>}

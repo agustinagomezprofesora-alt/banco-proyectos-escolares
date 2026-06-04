@@ -74,6 +74,8 @@ const baseFields = [
   'description',
   'teacher',
   'course',
+  'educationalLevel',
+  'educationalCycle',
   'area',
   'experienceType',
   'link',
@@ -109,7 +111,9 @@ const buildUpdateData = (data: Record<string, any>) => {
 
   for (const field of baseFields) {
     if (Object.prototype.hasOwnProperty.call(data, field)) {
-      updateData[field] = field === 'link' && data[field] === '' ? null : data[field]
+      updateData[field] = ['link', 'educationalLevel', 'educationalCycle'].includes(field) && data[field] === ''
+        ? null
+        : data[field]
     }
   }
 
@@ -151,6 +155,8 @@ const buildAIInput = (
   description: project.description,
   teacher: project.teacher,
   course: project.course,
+  educationalLevel: project.educationalLevel,
+  educationalCycle: project.educationalCycle,
   area: project.area,
   experienceType: project.experienceType,
   link: project.link,
@@ -347,6 +353,8 @@ export const duplicateProject = async (req: AuthRequest, res: Response) => {
       description: original.description,
       teacher: req.user!.name,
       course: original.course,
+      educationalLevel: original.educationalLevel,
+      educationalCycle: original.educationalCycle,
       area: original.area,
       experienceType: original.experienceType,
       link: original.link,
@@ -377,6 +385,8 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       description: data.description,
       teacher: data.teacher,
       course: data.course,
+      educationalLevel: data.educationalLevel || null,
+      educationalCycle: data.educationalCycle || null,
       area: data.area,
       experienceType: data.experienceType,
       link: data.link || null,
@@ -465,6 +475,10 @@ export const generateFicha = async (req: AuthRequest, res: Response) => {
   }
 }
 
+export const getWebSearchStatus = async (_req: AuthRequest, res: Response) => {
+  return res.json(getWebSearchProviderStatus())
+}
+
 export const enrichProjectContext = async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
   const project = await prisma.project.findUnique({ where: { id } })
@@ -512,8 +526,10 @@ export const enrichProjectContext = async (req: AuthRequest, res: Response) => {
     const sources = await getProjectSourcesForAI(id)
     const context = buildProjectLearningContext(buildAIInput(project, evidence, sources), sources)
     const sourceUsage = context.sourceNotes.length > 0 ? 'web' : 'internal'
-    const message = !providerStatus.enabled
-      ? 'La búsqueda web no está configurada. Se usará el contexto interno del proyecto.'
+    const message = providerStatus.configurationState === 'disabled'
+      ? 'La búsqueda web está desactivada. Se usará el contexto interno del proyecto.'
+      : providerStatus.configurationState === 'missing_api_key'
+        ? 'El proveedor de búsqueda web está configurado, pero falta la API key.'
       : foundSources.length > 0
         ? `Se encontraron ${foundSources.length} fuentes educativas confiables y quedaron disponibles para la generación.`
         : sourceUsage === 'web'
@@ -524,6 +540,7 @@ export const enrichProjectContext = async (req: AuthRequest, res: Response) => {
       query,
       provider: providerStatus.provider,
       searchPerformed: providerStatus.enabled,
+      configurationState: providerStatus.configurationState,
       sources,
       context,
       sourceUsage,

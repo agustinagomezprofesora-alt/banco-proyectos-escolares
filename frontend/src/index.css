@@ -612,14 +612,15 @@ button.btn-delete:hover:not(:disabled) {
 .bingo-grid {
   display: grid;
   gap: 18px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
 }
 
 .bingo-card {
-  padding: 18px;
+  padding: 20px;
   border-radius: 18px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 .bingo-table {
@@ -634,16 +635,32 @@ button.btn-delete:hover:not(:disabled) {
 }
 
 .bingo-cell {
-  min-height: 42px;
+  min-width: 0;
+  min-height: 68px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 8px;
-  font-size: 0.95rem;
+  border-radius: 8px;
+  padding: 8px 5px;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.bingo-cell--long {
+  font-size: 0.68rem;
+  letter-spacing: -0.02em;
+}
+
+.bingo-cell--very-long {
+  font-size: 0.6rem;
 }
 
 .slide-list {

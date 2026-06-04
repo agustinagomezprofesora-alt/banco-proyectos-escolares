@@ -5,6 +5,8 @@ export const projectSchema = z.object({
   description: z.string().min(10, 'Descripción mínima de 10 caracteres'),
   teacher: z.string().min(3, 'Docente requerido'),
   course: z.string().min(2, 'Curso requerido'),
+  educationalLevel: z.string().optional().nullable(),
+  educationalCycle: z.string().optional().nullable(),
   area: z.string().min(2, 'Área requerida'),
   experienceType: z.string().min(3, 'Tipo de experiencia requerido'),
   link: z.string().url('Link inválido').optional().nullable().or(z.literal('')),

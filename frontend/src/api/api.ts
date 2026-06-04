@@ -1,4 +1,4 @@
-import { EnrichedProjectContextResponse, GeneratedProjectResponse, InstitutionSettings, Project, ProjectFile, ProjectLink, ProjectStats } from '../types'
+import { EnrichedProjectContextResponse, GeneratedProjectResponse, InstitutionSettings, Project, ProjectFile, ProjectLink, ProjectStats, WebSearchStatus } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
 
@@ -123,6 +123,9 @@ export const generateFicha = (id: number) =>
 
 export const enrichProjectContext = (id: number) =>
   request<EnrichedProjectContextResponse>(`/projects/${id}/enrich-context`, { method: 'POST' })
+
+export const fetchWebSearchStatus = () =>
+  request<WebSearchStatus>('/projects/web-search-status')
 
 export const generateActivities = (id: number) =>
   request<GeneratedProjectResponse>(`/projects/${id}/generate-activities`, { method: 'POST' })

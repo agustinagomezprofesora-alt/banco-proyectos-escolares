@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createProject, fetchProject, updateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
+import { educationalCycleOptions, educationalLevelOptions, updateEducationalTarget } from '../utils/education'
 import { getErrorMessage } from '../utils/ui'
 
 const initialState = {
@@ -9,6 +10,8 @@ const initialState = {
   description: '',
   teacher: '',
   course: '',
+  educationalLevel: '',
+  educationalCycle: '',
   area: '',
   experienceType: '',
   link: '',
@@ -125,6 +128,8 @@ export default function ProjectFormPage() {
           description: data.description,
           teacher: data.teacher,
           course: data.course,
+          educationalLevel: data.educationalLevel ?? '',
+          educationalCycle: data.educationalCycle ?? '',
           area: data.area,
           experienceType: data.experienceType,
           link: data.link ?? '',
@@ -205,7 +210,21 @@ export default function ProjectFormPage() {
           <label>Título<input value={project.title} onChange={(e) => setProject({ ...project, title: e.target.value })} required /></label>
           <label>Descripción<textarea value={project.description} onChange={(e) => setProject({ ...project, description: e.target.value })} required /></label>
           <label>Docente<input value={project.teacher} onChange={(e) => setProject({ ...project, teacher: e.target.value })} required /></label>
-          <label>Curso<input value={project.course} onChange={(e) => setProject({ ...project, course: e.target.value })} required /></label>
+          <label>Curso<input value={project.course} onChange={(e) => setProject(updateEducationalTarget(project, { course: e.target.value }))} required /></label>
+          <label>
+            Nivel educativo
+            <select value={project.educationalLevel} onChange={(e) => setProject(updateEducationalTarget(project, { educationalLevel: e.target.value }))}>
+              <option value="">Seleccionar...</option>
+              {educationalLevelOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label>
+            Ciclo educativo
+            <select value={project.educationalCycle} onChange={(e) => setProject({ ...project, educationalCycle: e.target.value })}>
+              <option value="">Seleccionar...</option>
+              {educationalCycleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
           <label>Área<input value={project.area} onChange={(e) => setProject({ ...project, area: e.target.value })} required /></label>
           <label>Tipo de experiencia<input value={project.experienceType} onChange={(e) => setProject({ ...project, experienceType: e.target.value })} required /></label>
           <label>Link de evidencia<input value={project.link} onChange={(e) => setProject({ ...project, link: e.target.value })} /></label>

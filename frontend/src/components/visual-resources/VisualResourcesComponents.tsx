@@ -482,16 +482,75 @@ export const parseBingoConcepts = (value?: unknown): string[] => {
   return parseWordsFromText(rawText)
 }
 
+const bingoGeneralConcepts = [
+  'PROYECTO',
+  'PROBLEMA',
+  'SOLUCION',
+  'PROCESO',
+  'DISENO',
+  'PRUEBA',
+  'REGISTRO',
+  'OBSERVACION',
+  'EVIDENCIA',
+  'RESULTADO',
+  'EQUIPO',
+  'MATERIAL',
+  'IDEA',
+  'PREGUNTA',
+  'RESPUESTA',
+  'MEJORA',
+  'APRENDIZAJE',
+  'PLANIFICACION',
+  'COMPARACION',
+  'CONCLUSION'
+]
+
+export const extractBingoConcepts = (
+  value: unknown,
+  project?: { title?: unknown; area?: unknown; course?: unknown; experienceType?: unknown; description?: unknown; suggestedTags?: unknown }
+): string[] => {
+  const projectText = [
+    project?.title,
+    project?.area,
+    project?.course,
+    project?.experienceType,
+    project?.description,
+    project?.suggestedTags
+  ].filter(Boolean).join(' ')
+  const normalizedProjectText = normalizeWord(projectText)
+  const projectConcepts = projectText
+    .split(/[^\p{L}\p{N}]+/u)
+    .map(normalizeWord)
+    .filter((word) => word.length >= 3 && word.length <= 22)
+  const topicConcepts = [
+    ...(normalizedProjectText.includes('HUERTA')
+      ? ['HUERTA', 'SEMILLA', 'GERMINACION', 'COMPOST', 'RIEGO', 'SUELO', 'RAIZ', 'TALLO', 'COSECHA', 'BIODIVERSIDAD']
+      : []),
+    ...(normalizedProjectText.includes('ROBOT') || normalizedProjectText.includes('AUTOMAT')
+      ? ['ROBOT', 'SENSOR', 'ACTUADOR', 'CONTROL', 'PROGRAMA', 'ALGORITMO', 'ENTRADA', 'SALIDA', 'PROTOTIPO', 'AUTOMATIZACION']
+      : [])
+  ]
+
+  return Array.from(new Set([
+    ...parseBingoConcepts(value).map(normalizeWord),
+    ...projectConcepts,
+    ...topicConcepts,
+    ...bingoGeneralConcepts
+  ].filter((word) => word.length >= 3 && word.length <= 22))).slice(0, 36)
+}
+
 export const generateBingoCards = (words: string[], cardCount = 4, size = 4): BingoCard[] => {
-  const uniqueWords = Array.from(new Set(words.map((word) => word.trim()).filter(Boolean)))
+  const cellCount = size * size
+  const uniqueWords = Array.from(new Set([
+    ...words.map(normalizeWord),
+    ...bingoGeneralConcepts
+  ].filter(Boolean)))
   const cards: BingoCard[] = []
 
   for (let cardIndex = 0; cardIndex < cardCount; cardIndex += 1) {
-    const shuffled = [...uniqueWords].sort(() => Math.random() - 0.5)
-    const chosen = shuffled.slice(0, size * size)
-    while (chosen.length < size * size) {
-      chosen.push(uniqueWords[chosen.length % uniqueWords.length] || '---')
-    }
+    const offset = (cardIndex * 7) % uniqueWords.length
+    const rotated = [...uniqueWords.slice(offset), ...uniqueWords.slice(0, offset)]
+    const chosen = rotated.slice(0, cellCount)
     const grid: string[][] = []
     for (let row = 0; row < size; row += 1) {
       grid.push(chosen.slice(row * size, row * size + size))
@@ -799,13 +858,19 @@ export const BingoCards = ({ cards }: { cards: BingoCard[] }) => {
   return (
     <div className="bingo-grid">
       {cards.map((card) => (
-        <article key={card.id} className="bingo-card">
+        <article key={card.id} className="bingo-card avoid-break">
           <h4>{card.id.replace('bingo-', 'Cartón ')}</h4>
           <div className="bingo-table">
             {card.grid.map((row, rowIndex) => (
               <div key={rowIndex} className="bingo-row">
                 {row.map((cell, cellIndex) => (
-                  <div key={cellIndex} className="bingo-cell">{cell}</div>
+                  <div
+                    key={cellIndex}
+                    className={`bingo-cell${cell.length > 14 ? ' bingo-cell--long' : ''}${cell.length > 18 ? ' bingo-cell--very-long' : ''}`}
+                    title={cell}
+                  >
+                    {cell}
+                  </div>
                 ))}
               </div>
             ))}

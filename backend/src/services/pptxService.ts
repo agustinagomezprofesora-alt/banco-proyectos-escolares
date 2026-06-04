@@ -9,6 +9,8 @@ type PptxProject = {
   generatedSummary?: string | null
   teacher?: string | null
   course?: string | null
+  educationalLevel?: string | null
+  educationalCycle?: string | null
   area?: string | null
   experienceType?: string | null
   objectives?: string | null
@@ -261,6 +263,8 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
     description: project.description ?? '',
     teacher: project.teacher ?? '',
     course: project.course ?? '',
+    educationalLevel: project.educationalLevel ?? '',
+    educationalCycle: project.educationalCycle ?? '',
     area: project.area ?? '',
     experienceType: project.experienceType ?? '',
     generatedSummary: project.generatedSummary,
@@ -299,6 +303,8 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
       subtitle,
       bullets: fallbackBullets([
         cleanSingleLine(project.course),
+        cleanSingleLine(project.educationalLevel),
+        cleanSingleLine(project.educationalCycle),
         cleanSingleLine(project.area),
         cleanSingleLine(project.teacher),
         cleanSingleLine(project.experienceType)

@@ -13,6 +13,8 @@ export interface Project {
   generatedSummary?: string | null
   teacher: string
   course: string
+  educationalLevel?: string | null
+  educationalCycle?: string | null
   area: string
   experienceType: string
   link?: string | null
@@ -159,10 +161,23 @@ export interface ProjectSource {
   createdAt?: string
 }
 
+export type WebSearchProvider = 'none' | 'wikipedia' | 'tavily' | 'brave' | 'serpapi'
+export type WebSearchConfigurationState = 'disabled' | 'ready' | 'missing_api_key'
+
+export interface WebSearchStatus {
+  provider: WebSearchProvider
+  enabled: boolean
+  requiresApiKey: boolean
+  hasRequiredKey: boolean
+  configurationState: WebSearchConfigurationState
+  message: string
+}
+
 export interface EnrichedProjectContextResponse {
   query: string
-  provider: string
+  provider: WebSearchProvider
   searchPerformed: boolean
+  configurationState: WebSearchConfigurationState
   sources: ProjectSource[]
   context: unknown
   sourceUsage: 'web' | 'internal'

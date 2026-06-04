@@ -1,4 +1,5 @@
 export type WebSearchProvider = 'none' | 'wikipedia' | 'tavily' | 'brave' | 'serpapi'
+export type WebSearchConfigurationState = 'disabled' | 'ready' | 'missing_api_key'
 
 export type WebSource = {
   title: string
@@ -93,15 +94,35 @@ const providerFromEnv = (): WebSearchProvider => {
 
 export const getWebSearchProviderStatus = () => {
   const provider = providerFromEnv()
+  const requiresApiKey = provider === 'tavily' || provider === 'brave' || provider === 'serpapi'
   const hasRequiredKey = provider === 'tavily'
     ? Boolean(process.env.TAVILY_API_KEY?.trim())
     : provider === 'brave'
       ? Boolean(process.env.BRAVE_SEARCH_API_KEY?.trim())
       : provider === 'serpapi'
         ? Boolean(process.env.SERPAPI_API_KEY?.trim())
-        : provider === 'wikipedia'
+        : true
+  const configurationState: WebSearchConfigurationState = provider === 'none'
+    ? 'disabled'
+    : requiresApiKey && !hasRequiredKey
+      ? 'missing_api_key'
+      : 'ready'
+  const message = configurationState === 'disabled'
+    ? 'La búsqueda web está desactivada. Se usará el contexto interno del proyecto.'
+    : configurationState === 'missing_api_key'
+      ? 'El proveedor de búsqueda web está configurado, pero falta la API key.'
+      : provider === 'wikipedia'
+        ? 'Wikipedia está configurada como fuente educativa general y no requiere API key.'
+        : `El proveedor de búsqueda web ${provider} está configurado.`
 
-  return { provider, enabled: provider !== 'none' && hasRequiredKey }
+  return {
+    provider,
+    enabled: configurationState === 'ready',
+    requiresApiKey,
+    hasRequiredKey,
+    configurationState,
+    message
+  }
 }
 
 export const isTrustedEducationalSource = (url: string) => {
@@ -186,7 +207,7 @@ const rankRelevantSources = (sources: WebSource[], query: string) => {
 const searchWikipedia = async (query: string): Promise<WebSource[]> => {
   const words = query.split(/\s+/).filter(Boolean)
   const queries = Array.from(new Set([query, words.slice(0, 4).join(' '), words.slice(0, 2).join(' ')])).filter(Boolean)
-  let results: any[] = []
+  const results: any[] = []
 
   for (const searchQuery of queries) {
     const params = new URLSearchParams({
@@ -209,8 +230,7 @@ const searchWikipedia = async (query: string): Promise<WebSource[]> => {
     })
     if (!response.ok) throw new Error(`Wikipedia respondió ${response.status}`)
     const data = await response.json() as any
-    results = (data?.query?.pages ?? []).filter((item: any) => cleanText(item?.extract))
-    if (results.length > 0) break
+    results.push(...(data?.query?.pages ?? []).filter((item: any) => cleanText(item?.extract)))
   }
 
   const accessedAt = new Date().toISOString()

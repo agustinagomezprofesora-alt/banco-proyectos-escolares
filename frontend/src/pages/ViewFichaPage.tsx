@@ -400,6 +400,8 @@ export default function ViewFichaPage() {
               <div><strong>Docente</strong><p>{project.teacher}</p></div>
               <div><strong>Área</strong><p>{project.area}</p></div>
               <div><strong>Curso</strong><p>{project.course}</p></div>
+              <div><strong>Nivel educativo</strong><p>{project.educationalLevel || 'No especificado'}</p></div>
+              <div><strong>Ciclo educativo</strong><p>{project.educationalCycle || 'No especificado'}</p></div>
               <div><strong>Tipo</strong><p>{project.experienceType}</p></div>
               <div><strong>Reutilizable</strong><p>{project.isReusable ? 'Sí' : 'No'}</p></div>
             </div>

@@ -5,6 +5,8 @@ export interface ProjectInput {
   description: string
   teacher: string
   course: string
+  educationalLevel?: string | null
+  educationalCycle?: string | null
   area: string
   experienceType: string
   link?: string | null
@@ -35,6 +37,7 @@ export interface ProjectInput {
 
 export type LearningContext = {
   pedagogicalFocus: PedagogicalFocus
+  targetAudience: TargetAudience
   topicSummary: string
   keyConcepts: string[]
   specificVocabulary: string[]
@@ -48,6 +51,15 @@ export type LearningContext = {
   sourceNotes: SourceNote[]
 }
 
+export type TargetAudience = {
+  educationalLevel: string
+  educationalCycle: string
+  course: string
+  expectedAgeRange: string
+  cognitiveComplexity: string
+  languageStyle: string
+}
+
 export type PedagogicalFocus = {
   mainFocus: string
   applicationContext: string
@@ -55,6 +67,7 @@ export type PedagogicalFocus = {
   toolsOrMethods: string[]
   interdisciplinaryConnections: string[]
   priorityReason: string
+  targetAudience: TargetAudience
 }
 
 type CurricularAreaKey = 'naturalSciences' | 'socialSciences' | 'language' | 'technology' | 'mathematics' | 'arts' | 'general'
@@ -778,6 +791,68 @@ const uniqueList = (values: Array<string | null | undefined>) => Array.from(
   new Set(values.map((value) => String(value ?? '').trim()).filter(Boolean))
 )
 
+export const analyzeProjectTargetAudience = (project: Partial<ProjectInput>): TargetAudience => {
+  const course = trimText(project.course, 'curso no especificado')
+  const normalizedCourse = normalizeSearchText(course)
+  const explicitLevel = trimText(project.educationalLevel, '')
+  const explicitCycle = trimText(project.educationalCycle, '')
+  const courseNumber = Number(normalizedCourse.match(/\d+/)?.[0] ?? 0)
+  const looksLikeSecondaryDivision = (course.match(/\d+/g)?.length ?? 0) >= 2
+  const educationalLevel = explicitLevel ||
+    (normalizedCourse.includes('epja') || normalizedCourse.includes('adult') ? 'EPJA' :
+      normalizedCourse.includes('superior') ? 'Superior' :
+        normalizedCourse.includes('secund') || normalizedCourse.includes('ano') || looksLikeSecondaryDivision ? 'Secundaria' :
+          normalizedCourse.includes('primar') || normalizedCourse.includes('grado') ? 'Primaria' :
+            'No especificado')
+  const normalizedLevel = normalizeSearchText(educationalLevel)
+  const educationalCycle = explicitCycle ||
+    (normalizedLevel.includes('epja') ? 'Adultos' :
+      normalizedLevel.includes('superior') || normalizedLevel.includes('formacion docente') ? 'Superior' :
+        normalizedLevel.includes('secundaria') && courseNumber >= 1 && courseNumber <= 3 ? 'Ciclo básico' :
+          normalizedLevel.includes('secundaria') && courseNumber >= 4 ? 'Ciclo orientado' :
+            normalizedLevel.includes('primaria') && courseNumber >= 1 && courseNumber <= 3 ? 'Primer ciclo' :
+              normalizedLevel.includes('primaria') && courseNumber >= 4 ? 'Segundo ciclo' :
+                'No especificado')
+  const normalizedCycle = normalizeSearchText(educationalCycle)
+
+  if (normalizedLevel.includes('nivel inicial')) {
+    return { educationalLevel, educationalCycle, course, expectedAgeRange: '3 a 5 años', cognitiveComplexity: 'exploración concreta, lúdica y sensorial', languageStyle: 'frases breves, vocabulario cotidiano y apoyos visuales' }
+  }
+  if (normalizedLevel.includes('primaria')) {
+    return { educationalLevel, educationalCycle, course, expectedAgeRange: '6 a 12 años', cognitiveComplexity: 'observación guiada, manipulación y relaciones concretas', languageStyle: 'consignas simples, directas y secuenciadas' }
+  }
+  if (normalizedLevel.includes('secundaria') && normalizedCycle.includes('orientado')) {
+    return { educationalLevel, educationalCycle, course, expectedAgeRange: '15 a 18 años', cognitiveComplexity: 'análisis autónomo, argumentación y evaluación de alternativas', languageStyle: 'lenguaje preciso con conceptos disciplinares explicados' }
+  }
+  if (normalizedLevel.includes('secundaria')) {
+    return { educationalLevel, educationalCycle, course, expectedAgeRange: '12 a 15 años', cognitiveComplexity: 'conceptos introductorios y resolución de situaciones prácticas', languageStyle: 'preguntas claras, concretas y lenguaje accesible' }
+  }
+  if (normalizedLevel.includes('superior') || normalizedLevel.includes('formacion docente')) {
+    return { educationalLevel, educationalCycle, course, expectedAgeRange: 'jóvenes y personas adultas', cognitiveComplexity: 'fundamentación, análisis didáctico y diseño de propuestas', languageStyle: 'lenguaje académico claro y mayor abstracción' }
+  }
+  if (normalizedLevel.includes('epja')) {
+    return { educationalLevel, educationalCycle, course, expectedAgeRange: 'jóvenes y personas adultas con trayectorias diversas', cognitiveComplexity: 'resolución práctica vinculada con experiencias cotidianas', languageStyle: 'lenguaje claro, respetuoso y contextualizado' }
+  }
+
+  return { educationalLevel, educationalCycle, course, expectedAgeRange: 'no especificado', cognitiveComplexity: 'complejidad ajustable según el grupo', languageStyle: 'lenguaje claro, concreto y sin supuestos sobre la edad' }
+}
+
+const usesPracticalAudienceLanguage = (targetAudience: TargetAudience) => {
+  const target = normalizeSearchText(`${targetAudience.educationalLevel} ${targetAudience.educationalCycle}`)
+  return ['nivel inicial', 'primaria', 'ciclo basico', 'epja', 'adultos'].some((term) => target.includes(term))
+}
+
+const audienceGuidance = (targetAudience: TargetAudience) => {
+  const target = normalizeSearchText(`${targetAudience.educationalLevel} ${targetAudience.educationalCycle}`)
+  if (target.includes('nivel inicial')) return 'priorizar juego, exploración sensorial, consignas breves y apoyos visuales'
+  if (target.includes('primaria')) return 'priorizar manipulación, observación guiada, vocabulario básico y producciones concretas'
+  if (target.includes('ciclo basico')) return 'formular consignas claras, preguntas concretas, conceptos introductorios y situaciones prácticas'
+  if (target.includes('ciclo orientado')) return 'promover mayor autonomía, argumentación, análisis y evaluación de alternativas'
+  if (target.includes('superior') || target.includes('formacion docente')) return 'promover fundamentación, análisis didáctico, diseño de propuestas y reflexión pedagógica'
+  if (target.includes('epja') || target.includes('adultos')) return 'vincular conceptos con experiencias cotidianas, usar lenguaje claro y proponer tiempos flexibles'
+  return 'adecuar consignas, vocabulario y productos a las características del curso'
+}
+
 const containsNormalizedTerm = (source: string, term: string) => {
   const normalizedTerm = normalizeSearchText(term).trim()
   if (!normalizedTerm) return false
@@ -879,6 +954,49 @@ const deriveProjectSpecificMethods = (project: Partial<ProjectInput>) => {
   return methods
 }
 
+const buildAudienceAdjustedProblems = (focus: PedagogicalFocus, hasDistinctApplicationContext: boolean) => {
+  const source = normalizeSearchText(`${focus.mainFocus} ${focus.applicationContext} ${focus.toolsOrMethods.join(' ')}`)
+  const isRobotics = ['robot', 'sensor', 'actuador', 'automat'].some((term) => source.includes(term))
+  const isGarden = ['huerta', 'riego', 'cultivo', 'suelo'].some((term) => source.includes(term))
+
+  if (usesPracticalAudienceLanguage(focus.targetAudience) && isRobotics && isGarden) {
+    return [
+      '¿Qué problema de la huerta podría resolver un robot o sistema automático?',
+      '¿Para qué sirve un sensor de humedad?',
+      '¿Qué debería pasar si el suelo está seco?',
+      '¿Qué componente podría encender una bomba de agua?',
+      '¿Qué datos deberíamos registrar para saber si el prototipo funcionó?'
+    ]
+  }
+
+  if (usesPracticalAudienceLanguage(focus.targetAudience) && isRobotics) {
+    return [
+      `¿Qué problema concreto de ${focus.applicationContext} podría resolver un robot o sistema automático?`,
+      '¿Qué información debería detectar un sensor?',
+      '¿Qué debería hacer el sistema después de detectar ese dato?',
+      '¿Qué componente podría ejecutar la acción?',
+      '¿Cómo podemos comprobar si el prototipo funcionó?'
+    ]
+  }
+
+  if (usesPracticalAudienceLanguage(focus.targetAudience)) {
+    return [
+      `¿Qué problema concreto encontramos en ${focus.applicationContext}?`,
+      `¿Qué podemos observar, medir o comparar para comprenderlo?`,
+      `¿Qué solución sencilla podríamos probar usando ${focus.mainFocus}?`,
+      '¿Qué pasos deberíamos seguir?',
+      '¿Qué registro nos permitiría saber si la propuesta funcionó?'
+    ]
+  }
+
+  return hasDistinctApplicationContext
+    ? [
+        `¿Cómo aplicar ${focus.mainFocus} para resolver una necesidad o producir conocimiento sobre ${focus.applicationContext}?`,
+        `¿Qué decisiones y evidencias permiten evaluar una propuesta de ${focus.mainFocus} aplicada a ${focus.applicationContext}?`
+      ]
+    : []
+}
+
 const buildIntegratedActivities = (
   focus: PedagogicalFocus,
   areaKeys: CurricularAreaKey[],
@@ -897,6 +1015,15 @@ const buildIntegratedActivities = (
     ]
   }
   if (areaKeys.includes('technology')) {
+    if (usesPracticalAudienceLanguage(focus.targetAudience)) {
+      return [
+        `detectar un problema concreto de ${context} que pueda resolverse con un sistema o una solución tecnológica`,
+        `dibujar un sistema de entrada, proceso y salida aplicado a ${context}`,
+        `simular con tarjetas qué ocurre cuando el sistema detecta un dato y debe decidir una acción`,
+        `construir o representar un prototipo simple de ${focus.mainFocus} aplicado a ${context}`,
+        'probar el prototipo, registrar qué funcionó y señalar una mejora posible'
+      ]
+    }
     return [
       `identificar una necesidad concreta de ${context} que pueda resolverse mediante ${focus.mainFocus}`,
       `diseñar un sistema aplicado a ${context} que relacione entrada, procesamiento y salida usando ${tools}`,
@@ -1001,6 +1128,7 @@ const analyzeProjectPedagogicalFocusInternal = (project: Partial<ProjectInput>) 
     : hasSpecificArea
       ? `El área curricular ${curricularArea} tiene prioridad fuerte. Los demás temas se interpretan como herramientas o contextos de aplicación para evitar elegir una palabra secundaria al azar.`
       : 'No se detectó un eje disciplinar único con suficiente seguridad; se propone una articulación interdisciplinaria equilibrada.'
+  const targetAudience = analyzeProjectTargetAudience(project)
 
   const focus: PedagogicalFocus = {
     mainFocus,
@@ -1008,7 +1136,8 @@ const analyzeProjectPedagogicalFocusInternal = (project: Partial<ProjectInput>) 
     curricularArea,
     toolsOrMethods,
     interdisciplinaryConnections,
-    priorityReason
+    priorityReason,
+    targetAudience
   }
 
   return { focus, areaKeys, candidates, mainTopic, contextualTopics }
@@ -1042,15 +1171,8 @@ export const buildProjectLearningContext = (
   const sourceSummary = summarizeSourcesForLearningContext(webSources, sourceQuery)
   const evidenceCount = Number(Boolean(project.link)) + (project.links?.length ?? 0) + (project.files?.length ?? 0)
   const suggestedTagWords = String(project.suggestedTags ?? '').split(/[,;]+/).map((tag) => tag.trim()).filter(Boolean)
-  const normalizedCourse = normalizeSearchText(course)
-  const courseNumber = Number(normalizedCourse.match(/\d+/)?.[0] ?? 0)
-  const courseGuidance = normalizedCourse.includes('epja')
-    ? 'vincular conceptos con experiencias, saberes y problemas de la vida cotidiana de estudiantes de EPJA'
-    : courseNumber > 0 && courseNumber <= 3
-      ? 'priorizar observaciones guiadas, comparaciones claras y producciones breves adecuadas al ciclo básico'
-      : courseNumber > 3
-        ? 'promover análisis autónomo, argumentación con evidencias y producciones de mayor complejidad'
-        : 'adecuar consignas, vocabulario y productos a las características del curso'
+  const targetAudience = focus.targetAudience
+  const courseGuidance = audienceGuidance(targetAudience)
 
   const keyConcepts = uniqueList([
     focus.mainFocus,
@@ -1082,13 +1204,12 @@ export const buildProjectLearningContext = (
 
   const hasDistinctApplicationContext = Boolean(analysis.contextualTopics[0]) || !analysis.mainTopic
   const possibleProblems = uniqueList([
-    ...(hasDistinctApplicationContext ? [
-      `¿Cómo aplicar ${focus.mainFocus} para resolver una necesidad o producir conocimiento sobre ${focus.applicationContext}?`,
-      `¿Qué decisiones y evidencias permiten evaluar una propuesta de ${focus.mainFocus} aplicada a ${focus.applicationContext}?`
-    ] : []),
-    ...(topic?.possibleProblems ?? []),
+    ...buildAudienceAdjustedProblems(focus, hasDistinctApplicationContext),
+    ...(usesPracticalAudienceLanguage(targetAudience) ? [] : topic?.possibleProblems ?? []),
     `¿Qué problema concreto aborda ${title}?`,
-    `¿Cómo se relacionan ${keyConcepts[0]} y ${keyConcepts[1]} dentro de la experiencia?`,
+    usesPracticalAudienceLanguage(targetAudience)
+      ? `¿Dónde podemos observar ${keyConcepts[0]} y ${keyConcepts[1]} en esta experiencia?`
+      : `¿Cómo se relacionan ${keyConcepts[0]} y ${keyConcepts[1]} dentro de la experiencia?`,
     `¿Qué evidencias permitirían explicar los resultados del proyecto?`
   ]).slice(0, 8)
 
@@ -1114,11 +1235,12 @@ export const buildProjectLearningContext = (
     ...focus.toolsOrMethods.map(normalizeGameConcept),
     ...(topic?.gameConcepts ?? []),
     ...keyConcepts.map(normalizeGameConcept)
-  ]).filter((concept) => concept.length >= 3 && concept.length <= 15).slice(0, 14)
+  ]).filter((concept) => concept.length >= 3 && concept.length <= 18).slice(0, 24)
 
   const presentationFocus = uniqueList([
     `eje principal: ${focus.mainFocus}`,
     `contexto de aplicación: ${focus.applicationContext}`,
+    `destinatarios: ${targetAudience.educationalLevel}, ${targetAudience.educationalCycle}, ${targetAudience.course}`,
     ...(topic?.presentationFocus ?? []),
     possibleProblems[0],
     handsOnActivities[0],
@@ -1128,7 +1250,8 @@ export const buildProjectLearningContext = (
 
   return {
     pedagogicalFocus: focus,
-    topicSummary: `${title}: proyecto cuyo eje principal es ${focus.mainFocus}, aplicado a ${focus.applicationContext}, desarrollado en ${course} dentro del área ${area}. Integra ${keyConcepts.slice(0, 5).join(', ')}.${sourceSummary.webSummary ? ' El contexto también incorpora notas breves de fuentes educativas consultadas.' : ''}`,
+    targetAudience,
+    topicSummary: `${title}: proyecto cuyo eje principal es ${focus.mainFocus}, aplicado a ${focus.applicationContext}, desarrollado para ${targetAudience.educationalLevel}, ${targetAudience.educationalCycle}, ${course}, dentro del área ${area}. Integra ${keyConcepts.slice(0, 5).join(', ')}.${sourceSummary.webSummary ? ' El contexto también incorpora notas breves de fuentes educativas consultadas.' : ''}`,
     keyConcepts,
     specificVocabulary,
     curricularConnections,
@@ -1444,21 +1567,40 @@ const generateMockProjectActivities = ({ project: input, learningContext: contex
   const materials = topic?.materials ?? ['fichas de trabajo', 'materiales disponibles', 'planilla de registro', 'evidencias del proyecto']
   const products = topic?.products ?? ['registro comparativo', 'producción fundamentada', 'presentación de evidencias']
   const criteria = context.assessmentIdeas.slice(0, 4)
+  const practicalAudience = usesPracticalAudienceLanguage(context.targetAudience)
+  const technologySource = normalizeSearchText(`${context.pedagogicalFocus.mainFocus} ${context.pedagogicalFocus.toolsOrMethods.join(' ')}`)
+  const isPracticalTechnologyProject = practicalAudience && ['tecnolog', 'robot', 'sensor', 'automat'].some((term) => technologySource.includes(term))
 
   const firstActivity = formatActivity({
-    title: capitalize(activities[0]),
-    purpose: `Comprender ${concepts[0]} y ${concepts[1]} mediante una experiencia observable y registrada.`,
-    studentInstructions: `${capitalize(activities[0])}. Registren qué hicieron, qué observaron y qué cambió en cada momento.`,
-    steps: [
-      `Formulen una anticipación vinculada con: ${context.possibleProblems[0]}`,
-      `Preparen los materiales y acuerden qué dato u observación registrará cada integrante.`,
-      `${capitalize(activities[0])}.`,
-      `Completen una tabla con fecha, procedimiento, observación y evidencia.`,
-      `Escriban una conclusión breve que use los términos ${concepts.slice(0, 3).join(', ')}.`
-    ],
-    materials: materials.slice(0, 6),
+    title: isPracticalTechnologyProject
+      ? `Detectamos un problema tecnológico en ${context.pedagogicalFocus.applicationContext}`
+      : capitalize(activities[0]),
+    purpose: isPracticalTechnologyProject
+      ? `Reconocer un problema concreto y representar una solución simple usando ${concepts.slice(0, 3).join(', ')}.`
+      : `Comprender ${concepts[0]} y ${concepts[1]} mediante una experiencia observable y registrada.`,
+    studentInstructions: isPracticalTechnologyProject
+      ? `Observen o imaginen una situación de ${context.pedagogicalFocus.applicationContext}. Elijan un problema que pueda resolverse con ayuda de un sistema o una solución tecnológica.`
+      : `${capitalize(activities[0])}. Registren qué hicieron, qué observaron y qué cambió en cada momento.`,
+    steps: isPracticalTechnologyProject
+      ? [
+          `Anoten tres problemas posibles de ${context.pedagogicalFocus.applicationContext}.`,
+          'Elijan uno y expliquen por qué es importante resolverlo.',
+          'Piensen qué dato necesita conocer el sistema.',
+          'Dibujen una solución indicando entrada, proceso y salida.',
+          'Expliquen en pocas oraciones qué haría el sistema y cómo comprobarían si funciona.'
+        ]
+      : [
+          practicalAudience ? `Elijan una respuesta posible para esta pregunta: ${context.possibleProblems[0]}` : `Formulen una anticipación vinculada con: ${context.possibleProblems[0]}`,
+          `Preparen los materiales y acuerden qué dato u observación registrará cada integrante.`,
+          `${capitalize(activities[0])}.`,
+          `Completen una tabla con fecha, procedimiento, observación y evidencia.`,
+          `Escriban una conclusión breve que use los términos ${concepts.slice(0, 3).join(', ')}.`
+        ],
+    materials: isPracticalTechnologyProject
+      ? uniqueList(['hojas', 'lápices', 'tarjetas para entrada, proceso y salida', ...materials]).slice(0, 7)
+      : materials.slice(0, 6),
     estimatedTime: 'una clase de preparación y registros breves durante el período de observación',
-    expectedProduct: products[0],
+    expectedProduct: isPracticalTechnologyProject ? 'dibujo del sistema y explicación breve' : products[0],
     assessmentCriteria: criteria,
     noTechVariant: 'usar una planilla impresa y dibujos fechados para registrar cada observación',
     inclusiveAdaptation: 'distribuir roles de preparación, observación, medición y registro; ofrecer consignas por pasos y apoyos visuales'
@@ -1468,13 +1610,21 @@ const generateMockProjectActivities = ({ project: input, learningContext: contex
     title: capitalize(activity),
     purpose: `Analizar relaciones entre ${concepts[index + 1]} y ${concepts[index + 2]} a partir de una comparación concreta.`,
     studentInstructions: `${capitalize(activity)}. Comparen al menos dos condiciones y expliquen una diferencia observada con vocabulario del tema.`,
-    steps: [
-      'Definan las dos condiciones que van a comparar y mantengan iguales los demás aspectos posibles.',
-      `${capitalize(activity)}.`,
-      'Registren datos u observaciones con el mismo criterio en ambos casos.',
-      `Comparen resultados y señalen qué evidencia ayuda a responder: ${context.possibleProblems[index + 1] ?? context.possibleProblems[0]}`,
-      'Produzcan una conclusión que diferencie observación, explicación y propuesta de mejora.'
-    ],
+    steps: practicalAudience
+      ? [
+          'Elijan dos condiciones o soluciones para comparar.',
+          `${capitalize(activity)}.`,
+          'Registren los resultados en una tabla simple usando el mismo criterio.',
+          `Marquen qué dato ayuda a responder: ${context.possibleProblems[index + 1] ?? context.possibleProblems[0]}`,
+          'Escriban qué funcionó, qué no funcionó y qué cambiarían.'
+        ]
+      : [
+          'Definan las dos condiciones que van a comparar y mantengan iguales los demás aspectos posibles.',
+          `${capitalize(activity)}.`,
+          'Registren datos u observaciones con el mismo criterio en ambos casos.',
+          `Comparen resultados y señalen qué evidencia ayuda a responder: ${context.possibleProblems[index + 1] ?? context.possibleProblems[0]}`,
+          'Produzcan una conclusión que diferencie observación, explicación y propuesta de mejora.'
+        ],
     materials: materials.slice(index, index + 6),
     estimatedTime: 'dos clases de trabajo y una instancia breve de seguimiento',
     expectedProduct: products[index + 1] ?? products[0],
@@ -1519,7 +1669,11 @@ const generateMockProjectActivities = ({ project: input, learningContext: contex
 const generateMockProjectGames = ({ project: input, learningContext: context }: ActivityGenerationInput): GeneratedGames => {
   const topic = detectTopicKnowledge(input)
   const concepts = context.keyConcepts.slice(0, 8)
-  const gameConcepts = context.gameConcepts.slice(0, 12)
+  const gameConcepts = context.gameConcepts.slice(0, 24)
+  const projectSource = normalizeSearchText(`${context.pedagogicalFocus.mainFocus} ${context.pedagogicalFocus.applicationContext} ${context.pedagogicalFocus.toolsOrMethods.join(' ')}`)
+  const isPracticalRoboticsGarden = usesPracticalAudienceLanguage(context.targetAudience) &&
+    ['robot', 'sensor', 'automat'].some((term) => projectSource.includes(term)) &&
+    ['huerta', 'riego', 'suelo'].some((term) => projectSource.includes(term))
   const questions = [...context.possibleProblems]
   while (questions.length < 5) {
     const concept = concepts[questions.length % concepts.length]
@@ -1536,6 +1690,16 @@ const generateMockProjectGames = ({ project: input, learningContext: context }: 
       answers[index] = `Se identifica una necesidad concreta de ${context.pedagogicalFocus.applicationContext}, se diseña una propuesta desde ${context.pedagogicalFocus.mainFocus} y se comprueba con evidencias.`
     } else if (question.startsWith('¿Qué decisiones y evidencias')) {
       answers[index] = `Se evalúan el procedimiento, el uso de ${context.pedagogicalFocus.toolsOrMethods.slice(0, 3).join(', ')}, las pruebas realizadas y las mejoras justificadas.`
+    } else if (isPracticalRoboticsGarden && question.includes('problema de la huerta')) {
+      answers[index] = 'Puede ayudar a detectar suelo seco y activar o avisar que hace falta riego.'
+    } else if (isPracticalRoboticsGarden && question.includes('sensor de humedad')) {
+      answers[index] = 'Sirve para detectar cuánta humedad hay en el suelo y aportar un dato al sistema.'
+    } else if (isPracticalRoboticsGarden && question.includes('suelo está seco')) {
+      answers[index] = 'El sistema debería activar una salida, como una alarma o una bomba de agua, según la regla programada.'
+    } else if (isPracticalRoboticsGarden && question.includes('encender una bomba')) {
+      answers[index] = 'Un actuador o un módulo de control adecuado puede activar la bomba.'
+    } else if (isPracticalRoboticsGarden && question.includes('prototipo funcionó')) {
+      answers[index] = 'Hay que registrar la humedad detectada, la acción realizada y el resultado de cada prueba.'
     }
   })
   const definitions = concepts.map((concept) => definitionForConcept(concept, context))
@@ -1548,18 +1712,44 @@ const generateMockProjectGames = ({ project: input, learningContext: context }: 
     .map((concept, index) => `${index + 1}. ${capitalize(concept)}: ${definitions[index]}. Verdadero.`)
   trueStatements.push(`5. ${endSentence(topic?.falseStatement ?? `${capitalize(concepts[0])} no se relaciona con ${concepts[1]} dentro de esta experiencia`)} Falso.`)
 
-  const multipleChoice = concepts.slice(0, 3).map((concept, index) => {
-    const distractors = definitions.filter((_, definitionIndex) => definitionIndex !== index).slice(0, 2)
-    return `${index + 1}. ¿Cuál opción describe mejor "${concept}"?
+  const multipleChoice = isPracticalRoboticsGarden
+    ? `1. ¿Qué componente podría detectar si el suelo está seco?
+A. Sensor de humedad
+B. Parlante
+C. Pantalla
+Respuesta sugerida: A.
+
+2. ¿Qué componente ejecuta una acción física en un sistema?
+A. Actuador
+B. Sensor
+C. Tabla de registro
+Respuesta sugerida: A.
+
+3. ¿Qué significa automatizar una tarea?
+A. Hacerla siempre de forma manual
+B. Crear un sistema que actúe según datos y reglas
+C. Registrar un dato sin tomar decisiones
+Respuesta sugerida: B.`
+    : concepts.slice(0, 3).map((concept, index) => {
+      const distractors = definitions.filter((_, definitionIndex) => definitionIndex !== index).slice(0, 2)
+      return `${index + 1}. ¿Cuál opción describe mejor "${concept}"?
 A. ${definitions[index]}
 B. ${distractors[0] ?? 'un registro administrativo sin relación con el tema'}
 C. ${distractors[1] ?? 'un resultado que no requiere observación ni evidencia'}
 Respuesta sugerida: A.`
-  }).join('\n\n')
+    }).join('\n\n')
+
+  const trueFalse = isPracticalRoboticsGarden
+    ? `1. Un sensor recoge información del entorno. Verdadero.
+2. Un actuador sirve para ejecutar una acción. Verdadero.
+3. Un algoritmo es una lista ordenada de pasos para resolver un problema. Verdadero.
+4. Un sensor de humedad puede aportar datos sobre el suelo. Verdadero.
+5. Un sistema automático siempre necesita que una persona active manualmente cada acción. Falso.`
+    : trueStatements.join('\n')
 
   return {
     quizQuestions,
-    trueFalse: trueStatements.join('\n'),
+    trueFalse,
     multipleChoice,
     wordSearch: `Conceptos sugeridos para sopa de letras: ${gameConcepts.join(', ')}.`,
     crossword: concepts.slice(0, 6).map((concept, index) => `${index + 1}. ${endSentence(definitionForConcept(concept, context))}\nRespuesta: ${concept}.`).join('\n'),
@@ -1575,10 +1765,11 @@ const generateMockProjectPresentation = ({ project: input, learningContext: cont
   const concepts = context.keyConcepts.slice(0, 8).join(', ')
   const activities = context.handsOnActivities.slice(0, 4)
   const evidence = evidenceText(input)
+  const targetLabel = [context.targetAudience.educationalLevel, context.targetAudience.educationalCycle, input.course].filter(Boolean).join(' - ')
 
   return {
     presentationTitle: input.title,
-    presentationSubtitle: `${input.area} - ${input.course} - ${input.experienceType}`,
+    presentationSubtitle: `${input.area} - ${targetLabel} - ${input.experienceType}`,
     slides: `1. Portada: "${input.title}", ${input.area}, ${input.course} y ${input.experienceType}. Visual: evidencia representativa del tema.
 2. ¿Qué problema o pregunta trabajamos?: ${context.possibleProblems.slice(0, 2).join(' / ')} Visual: preguntas destacadas.
 3. Conceptos clave del tema: ${concepts}. Visual: mapa de relaciones entre conceptos.
@@ -1631,12 +1822,15 @@ Respondé únicamente JSON válido.`
 }
 
 const pedagogicalFocusPromptInstruction = `Identificá el eje principal del proyecto según área, título y descripción. Si hay varios temas, diferenciá eje principal y contexto de aplicación. No generes actividades centradas únicamente en un tema secundario.`
+const targetAudiencePromptInstruction = `Adaptá el lenguaje, la profundidad conceptual y el tipo de consigna al nivel educativo, ciclo y curso. No formules preguntas pensadas para docentes o nivel superior si el destinatario es secundaria ciclo básico.
+Las preguntas para estudiantes deben ser claras, concretas y acordes a su edad. Evitá formulaciones abstractas como "producir conocimiento sobre..." salvo que el nivel sea superior o formación docente.`
 
 const buildActivitiesPrompt = ({ project: input, learningContext: context }: ActivityGenerationInput) => {
-  return `Actuá como especialista en didáctica y diseño de propuestas pedagógicas para escuela secundaria y EPJA.
+  return `Actuá como especialista en didáctica y diseño de propuestas pedagógicas para distintos niveles educativos.
 
 Antes de generar, analizá el proyecto y usá el contexto disciplinar específico del tema, área y curso.
 ${pedagogicalFocusPromptInstruction}
+${targetAudiencePromptInstruction}
 No generes actividades genéricas.
 No uses frases vagas como “investigar el tema” sin explicar qué deben buscar, comparar, construir o producir.
 No uses “hacer una puesta en común” o “reflexionar sobre lo aprendido” si no indicás un producto, preguntas y pasos concretos.
@@ -1668,6 +1862,8 @@ Usá vocabulario del contexto enriquecido y adecuá la complejidad al curso.
 Datos del proyecto:
 - Título: ${trimText(input.title)}
 - Curso: ${trimText(input.course)}
+- Nivel educativo: ${trimText(input.educationalLevel)}
+- Ciclo educativo: ${trimText(input.educationalCycle)}
 - Área: ${trimText(input.area)}
 - Tipo de experiencia: ${trimText(input.experienceType)}
 - Descripción: ${trimText(input.description)}
@@ -1693,10 +1889,11 @@ Respondé únicamente JSON válido.`
 }
 
 const buildGamesPrompt = ({ project: input, learningContext: context }: ActivityGenerationInput) => {
-  return `Actuá como especialista en gamificación educativa para escuela secundaria y EPJA.
+  return `Actuá como especialista en gamificación para distintos niveles educativos.
 
 Antes de generar, analizá el proyecto y usá el contexto disciplinar específico del tema, área y curso.
 ${pedagogicalFocusPromptInstruction}
+${targetAudiencePromptInstruction}
 Generá juegos educativos listos para usar a partir de gameConcepts, keyConcepts y possibleProblems.
 No generes solo instrucciones generales.
 Cada juego debe incluir contenido real.
@@ -1722,6 +1919,8 @@ Si sourceNotes está vacío, trabajá solo con el contexto interno del proyecto.
 Datos del proyecto:
 - Título: ${trimText(input.title)}
 - Curso: ${trimText(input.course)}
+- Nivel educativo: ${trimText(input.educationalLevel)}
+- Ciclo educativo: ${trimText(input.educationalCycle)}
 - Área: ${trimText(input.area)}
 - Tipo de experiencia: ${trimText(input.experienceType)}
 - Descripción: ${trimText(input.description)}
@@ -1750,10 +1949,11 @@ Respondé únicamente JSON válido.`
 }
 
 const buildPresentationPrompt = ({ project: input, learningContext: context }: ActivityGenerationInput) => {
-  return `Actuá como especialista en comunicación educativa para escuela secundaria y EPJA.
+  return `Actuá como especialista en comunicación para distintos niveles educativos.
 
 Antes de generar, analizá el proyecto y usá el contexto disciplinar específico del tema, área y curso.
 ${pedagogicalFocusPromptInstruction}
+${targetAudiencePromptInstruction}
 Generá una presentación visual del proyecto con contenido específico, no genérico.
 Cada diapositiva debe tener:
 - título claro
@@ -1788,6 +1988,8 @@ Si sourceNotes está vacío, trabajá solo con el contexto interno del proyecto.
 Datos del proyecto:
 - Título: ${trimText(input.title)}
 - Curso: ${trimText(input.course)}
+- Nivel educativo: ${trimText(input.educationalLevel)}
+- Ciclo educativo: ${trimText(input.educationalCycle)}
 - Área: ${trimText(input.area)}
 - Tipo de experiencia: ${trimText(input.experienceType)}
 - Descripción: ${trimText(input.description)}

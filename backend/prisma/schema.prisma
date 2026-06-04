@@ -25,6 +25,8 @@ model Project {
   description               String
   teacher                   String
   course                    String
+  educationalLevel          String?
+  educationalCycle          String?
   area                      String
   experienceType            String
   link                      String?

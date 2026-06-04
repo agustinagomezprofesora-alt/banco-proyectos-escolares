@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
+import { educationalCycleOptions, educationalLevelOptions, updateEducationalTarget } from '../utils/education'
 import { getErrorMessage } from '../utils/ui'
 
 export default function NewProjectPage() {
@@ -13,6 +14,8 @@ export default function NewProjectPage() {
     title: '',
     teacher: user?.name ?? '',
     course: '',
+    educationalLevel: '',
+    educationalCycle: '',
     area: '',
     experienceType: '',
     description: '',
@@ -57,7 +60,21 @@ export default function NewProjectPage() {
         </label>
         <label>
           Curso o grupo
-          <input value={form.course} onChange={(e) => setForm({ ...form, course: e.target.value })} required />
+          <input value={form.course} onChange={(e) => setForm(updateEducationalTarget(form, { course: e.target.value }))} required />
+        </label>
+        <label>
+          Nivel educativo
+          <select value={form.educationalLevel} onChange={(e) => setForm(updateEducationalTarget(form, { educationalLevel: e.target.value }))}>
+            <option value="">Seleccionar...</option>
+            {educationalLevelOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+        </label>
+        <label>
+          Ciclo educativo
+          <select value={form.educationalCycle} onChange={(e) => setForm({ ...form, educationalCycle: e.target.value })}>
+            <option value="">Seleccionar...</option>
+            {educationalCycleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
         </label>
         <label>
           Área o materia

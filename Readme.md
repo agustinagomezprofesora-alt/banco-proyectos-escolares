@@ -350,6 +350,8 @@ Campos principales:
 - description
 - teacher
 - course
+- educationalLevel
+- educationalCycle
 - area
 - experienceType
 - link
@@ -1061,7 +1063,7 @@ buildProjectLearningContext(project)
 
 ---
 
-## Búsqueda web educativa con fuentes
+## Configuración de búsqueda web educativa
 
 La búsqueda web educativa es opcional y se activa únicamente cuando una persona con permisos pulsa **Buscar fuentes educativas**. La app no busca por buscar ni realiza consultas web automáticas durante cada generación.
 
@@ -1072,13 +1074,37 @@ Finalidad:
 - conservar URLs y fechas de consulta para PDF y PowerPoint;
 - mantener revisión humana antes de usar o publicar materiales.
 
-Proveedores configurables:
+Si `WEB_SEARCH_PROVIDER` no está definido, la aplicación usa `none`.
+
+Ejemplos de configuración:
+
+Desactivar la búsqueda web y usar solamente el contexto interno:
 
 ```env
-WEB_SEARCH_PROVIDER="none"
-TAVILY_API_KEY=""
-BRAVE_SEARCH_API_KEY=""
-SERPAPI_API_KEY=""
+WEB_SEARCH_PROVIDER=none
+```
+
+Usar Wikipedia como fuente educativa general, sin API key:
+
+```env
+WEB_SEARCH_PROVIDER=wikipedia
+```
+
+Usar Tavily:
+
+```env
+WEB_SEARCH_PROVIDER=tavily
+TAVILY_API_KEY=...
+```
+
+Otros proveedores admitidos:
+
+```env
+WEB_SEARCH_PROVIDER=brave
+BRAVE_SEARCH_API_KEY=...
+
+WEB_SEARCH_PROVIDER=serpapi
+SERPAPI_API_KEY=...
 ```
 
 Valores admitidos para `WEB_SEARCH_PROVIDER`:
@@ -1088,6 +1114,8 @@ Valores admitidos para `WEB_SEARCH_PROVIDER`:
 - `tavily`: requiere `TAVILY_API_KEY`.
 - `brave`: requiere `BRAVE_SEARCH_API_KEY`.
 - `serpapi`: requiere `SERPAPI_API_KEY`.
+
+Si se configura Tavily, Brave o SerpAPI sin su API key, la búsqueda no se ejecuta y la interfaz informa que falta la clave. Los cambios realizados en `backend/.env` requieren reiniciar el backend.
 
 La app prioriza dominios educativos, académicos, gubernamentales y organizaciones reconocidas. Evita redes sociales, foros y páginas comerciales. Los resultados se filtran por confiabilidad y pertinencia temática antes de guardarse y de incorporarse al contexto de generación.
 
@@ -1143,6 +1171,73 @@ Regla general:
 Si un proyecto combina dos temas, la app debe construir una propuesta articulada, pero respetando el área principal cargada y el propósito del proyecto.
 
 No debe generar actividades centradas únicamente en un tema secundario.
+## Nivel educativo y adaptación de materiales
+
+La app debe generar actividades, juegos y presentaciones teniendo en cuenta el destinatario educativo.
+
+Cada proyecto puede indicar:
+
+- nivel educativo
+- ciclo
+- curso/año
+
+Campos sugeridos:
+
+- `educationalLevel`
+- `educationalCycle`
+
+Valores posibles para `educationalLevel`:
+
+- Nivel Inicial
+- Primaria
+- Secundaria
+- Superior
+- Formación Docente
+- EPJA
+- Otro
+
+Valores posibles para `educationalCycle`:
+
+- Primer ciclo
+- Segundo ciclo
+- Ciclo básico
+- Ciclo orientado
+- Adultos
+- Superior
+- No corresponde
+
+La generación de materiales debe adaptar:
+
+- vocabulario
+- extensión de consignas
+- complejidad conceptual
+- tipo de preguntas
+- nivel de autonomía esperado
+- criterios de evaluación
+- juegos educativos
+- presentación visual
+
+`analyzeProjectPedagogicalFocus(project)` y `buildProjectLearningContext(project)` construyen un `targetAudience` con nivel, ciclo, curso, rango etario esperado, complejidad cognitiva y estilo de lenguaje. Ese contexto se usa en actividades, juegos y presentaciones, tanto con IA configurada como con el fallback local.
+
+En los formularios, Secundaria 1°, 2° o 3° sugiere `Ciclo básico`; 4°, 5° o 6° sugiere `Ciclo orientado`; y EPJA sugiere `Adultos`. La sugerencia siempre puede editarse manualmente.
+
+Ejemplo:
+
+Para “Robótica aplicada a la huerta” en Educación Tecnológica, 3°1° de secundaria ciclo básico, la app debe generar preguntas como:
+
+- ¿Qué mide un sensor de humedad?
+- ¿Qué diferencia hay entre sensor y actuador?
+- ¿Qué debería pasar si el suelo está seco?
+- ¿Qué salida podría activar un sistema de riego automático?
+
+No debe generar preguntas abstractas pensadas para docentes o nivel superior, como:
+
+- ¿Cómo aplicar robótica educativa y automatización para resolver una necesidad o producir conocimiento sobre huerta escolar?
+
+Regla general:
+
+La app debe adaptar los materiales al nivel real del grupo destinatario. Si el proyecto es para estudiantes de secundaria ciclo básico, las consignas deben ser concretas, claras, guiadas y aplicables en aula.
+
 ## Nota final
 
 Este README refleja el estado funcional avanzado del proyecto hasta la Fase 10.

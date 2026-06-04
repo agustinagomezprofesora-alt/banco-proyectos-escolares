@@ -7,6 +7,8 @@ export interface ProjectCreateData {
   description: string
   teacher: string
   course: string
+  educationalLevel?: string | null
+  educationalCycle?: string | null
   area: string
   experienceType: string
   link?: string | null
@@ -20,6 +22,8 @@ export interface ProjectUpdateData {
   description?: string
   teacher?: string
   course?: string
+  educationalLevel?: string | null
+  educationalCycle?: string | null
   area?: string
   experienceType?: string
   link?: string | null

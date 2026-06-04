@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { listProjects, getProject, createProject, updateProject, deleteProject, generateFicha, enrichProjectContext, generateActivities, generateGames, generatePresentation, submitForReview, getPublishedProjects, getPublishedProject, duplicateProject, publishProject, archiveProject, downloadProjectPdf, downloadProjectPptx } from '../controllers/projectController'
+import { listProjects, getProject, createProject, updateProject, deleteProject, generateFicha, getWebSearchStatus, enrichProjectContext, generateActivities, generateGames, generatePresentation, submitForReview, getPublishedProjects, getPublishedProject, duplicateProject, publishProject, archiveProject, downloadProjectPdf, downloadProjectPptx } from '../controllers/projectController'
 import { createProjectLink, listProjectFiles, listProjectLinks, uploadProjectFile } from '../controllers/evidenceController'
 import { uploadProjectFile as uploadProjectFileMiddleware } from '../services/uploadService'
 
@@ -19,6 +19,7 @@ const uploadSingleProjectFile = (req: any, res: any, next: any) => {
 
 router.get('/published', getPublishedProjects)
 router.get('/published/:id', getPublishedProject)
+router.get('/web-search-status', getWebSearchStatus)
 router.get('/', listProjects)
 router.get('/:id/pdf', downloadProjectPdf)
 router.get('/:id/pptx', downloadProjectPptx)
