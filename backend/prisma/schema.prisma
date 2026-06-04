@@ -27,6 +27,7 @@ model Project {
   course                    String
   educationalLevel          String?
   educationalCycle          String?
+  activityOrientation       String?
   area                      String
   experienceType            String
   link                      String?

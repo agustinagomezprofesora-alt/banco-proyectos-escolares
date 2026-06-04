@@ -1238,6 +1238,31 @@ Regla general:
 
 La app debe adaptar los materiales al nivel real del grupo destinatario. Si el proyecto es para estudiantes de secundaria ciclo básico, las consignas deben ser concretas, claras, guiadas y aplicables en aula.
 
+## Orientación de actividades
+
+Cada proyecto puede indicar opcionalmente una orientación para la generación de actividades:
+
+```ts
+activityOrientation: "practical" | "theoretical" | "mixed" | null
+```
+
+Valores disponibles:
+
+- `practical`: Práctica.
+- `theoretical`: Teórica.
+- `mixed`: Mixta.
+- `null`: Sin definir.
+
+Si el docente no selecciona ninguna orientación, la app mantiene el criterio general de generación anterior.
+
+Cuando existe una orientación:
+
+- **Práctica:** prioriza acciones concretas como construir, probar, observar, registrar, producir, diseñar, simular o prototipar. Incluye materiales, pasos y producto final.
+- **Teórica:** prioriza comprensión conceptual, lectura guiada, análisis, comparación, debate, glosarios, mapas conceptuales, preguntas orientadoras y producciones escritas.
+- **Mixta:** combina una comprensión teórica breve, una aplicación práctica concreta y un cierre o reflexión en cada actividad.
+
+La orientación se combina con el enfoque pedagógico detectado, el nivel educativo, el ciclo, el área, el curso y el contexto enriquecido del proyecto. Se puede definir al cargar o editar una experiencia y, cuando corresponde, aparece en las vistas de detalle, PDF y PowerPoint.
+
 ## Nota final
 
 Este README refleja el estado funcional avanzado del proyecto hasta la Fase 10.

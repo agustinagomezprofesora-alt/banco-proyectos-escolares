@@ -10,6 +10,7 @@ type PdfProject = {
   course?: string | null
   educationalLevel?: string | null
   educationalCycle?: string | null
+  activityOrientation?: string | null
   area?: string | null
   experienceType?: string | null
   link?: string | null
@@ -90,6 +91,13 @@ const formatDate = (input: unknown) => {
   if (Number.isNaN(date.getTime())) return 'No especificado'
 
   return date.toLocaleDateString('es-AR')
+}
+
+const activityOrientationLabel = (value: unknown) => {
+  if (value === 'practical') return 'Práctica'
+  if (value === 'theoretical') return 'Teórica'
+  if (value === 'mixed') return 'Mixta'
+  return ''
 }
 
 const safeText = (input: unknown) => formatValue(input).replace(/\s+/g, ' ').trim()
@@ -201,6 +209,9 @@ export const generateProjectPdf = async (project: PdfProject, settings?: PdfSett
     addLabel(doc, 'Curso', project.course, contentWidth)
     addLabel(doc, 'Nivel educativo', project.educationalLevel, contentWidth)
     addLabel(doc, 'Ciclo educativo', project.educationalCycle, contentWidth)
+    if (hasValue(project.activityOrientation)) {
+      addLabel(doc, 'Orientación de actividades', activityOrientationLabel(project.activityOrientation), contentWidth)
+    }
     addLabel(doc, 'Área', project.area, contentWidth)
     addLabel(doc, 'Tipo de experiencia', project.experienceType, contentWidth)
     addLabel(doc, 'Estado', project.status, contentWidth)

@@ -1,5 +1,5 @@
 const pptxgen = require('pptxgenjs')
-import { analyzeProjectPedagogicalFocus, buildProjectLearningContext } from './aiService'
+import { analyzeProjectPedagogicalFocus, buildProjectLearningContext, type ActivityOrientation } from './aiService'
 
 type PptxProject = {
   id: number
@@ -11,6 +11,7 @@ type PptxProject = {
   course?: string | null
   educationalLevel?: string | null
   educationalCycle?: string | null
+  activityOrientation?: string | null
   area?: string | null
   experienceType?: string | null
   objectives?: string | null
@@ -99,6 +100,16 @@ const cleanText = (value: unknown) => {
 }
 
 const cleanSingleLine = (value: unknown) => cleanText(value).replace(/\s+/g, ' ').trim()
+
+const activityOrientationLabel = (value: unknown) => {
+  if (value === 'practical') return 'Orientación de actividades: Práctica'
+  if (value === 'theoretical') return 'Orientación de actividades: Teórica'
+  if (value === 'mixed') return 'Orientación de actividades: Mixta'
+  return ''
+}
+
+const normalizeActivityOrientation = (value: unknown): ActivityOrientation | null =>
+  value === 'practical' || value === 'theoretical' || value === 'mixed' ? value : null
 
 const normalizeColor = (value: string | null | undefined, fallback: string) => {
   const color = cleanSingleLine(value).replace('#', '')
@@ -265,6 +276,7 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
     course: project.course ?? '',
     educationalLevel: project.educationalLevel ?? '',
     educationalCycle: project.educationalCycle ?? '',
+    activityOrientation: normalizeActivityOrientation(project.activityOrientation),
     area: project.area ?? '',
     experienceType: project.experienceType ?? '',
     generatedSummary: project.generatedSummary,
@@ -305,6 +317,7 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
         cleanSingleLine(project.course),
         cleanSingleLine(project.educationalLevel),
         cleanSingleLine(project.educationalCycle),
+        activityOrientationLabel(project.activityOrientation),
         cleanSingleLine(project.area),
         cleanSingleLine(project.teacher),
         cleanSingleLine(project.experienceType)

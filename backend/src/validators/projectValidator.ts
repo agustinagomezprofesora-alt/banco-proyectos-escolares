@@ -7,6 +7,7 @@ export const projectSchema = z.object({
   course: z.string().min(2, 'Curso requerido'),
   educationalLevel: z.string().optional().nullable(),
   educationalCycle: z.string().optional().nullable(),
+  activityOrientation: z.union([z.enum(['practical', 'theoretical', 'mixed']), z.literal('')]).optional().nullable(),
   area: z.string().min(2, 'Área requerida'),
   experienceType: z.string().min(3, 'Tipo de experiencia requerido'),
   link: z.string().url('Link inválido').optional().nullable().or(z.literal('')),

@@ -7,6 +7,7 @@ export interface ProjectInput {
   course: string
   educationalLevel?: string | null
   educationalCycle?: string | null
+  activityOrientation?: ActivityOrientation | null
   area: string
   experienceType: string
   link?: string | null
@@ -35,9 +36,12 @@ export interface ProjectInput {
   webSources?: WebSource[]
 }
 
+export type ActivityOrientation = 'practical' | 'theoretical' | 'mixed'
+
 export type LearningContext = {
   pedagogicalFocus: PedagogicalFocus
   targetAudience: TargetAudience
+  activityOrientation: ActivityOrientation | null
   topicSummary: string
   keyConcepts: string[]
   specificVocabulary: string[]
@@ -309,6 +313,9 @@ const trimText = (value: unknown, fallback = 'No especificado') => {
   const text = value.trim()
   return text || fallback
 }
+
+const normalizeActivityOrientation = (value: unknown): ActivityOrientation | null =>
+  value === 'practical' || value === 'theoretical' || value === 'mixed' ? value : null
 
 const evidenceText = (input: ProjectInput) => {
   const items = [
@@ -1172,6 +1179,7 @@ export const buildProjectLearningContext = (
   const evidenceCount = Number(Boolean(project.link)) + (project.links?.length ?? 0) + (project.files?.length ?? 0)
   const suggestedTagWords = String(project.suggestedTags ?? '').split(/[,;]+/).map((tag) => tag.trim()).filter(Boolean)
   const targetAudience = focus.targetAudience
+  const activityOrientation = normalizeActivityOrientation(project.activityOrientation)
   const courseGuidance = audienceGuidance(targetAudience)
 
   const keyConcepts = uniqueList([
@@ -1251,6 +1259,7 @@ export const buildProjectLearningContext = (
   return {
     pedagogicalFocus: focus,
     targetAudience,
+    activityOrientation,
     topicSummary: `${title}: proyecto cuyo eje principal es ${focus.mainFocus}, aplicado a ${focus.applicationContext}, desarrollado para ${targetAudience.educationalLevel}, ${targetAudience.educationalCycle}, ${course}, dentro del área ${area}. Integra ${keyConcepts.slice(0, 5).join(', ')}.${sourceSummary.webSummary ? ' El contexto también incorpora notas breves de fuentes educativas consultadas.' : ''}`,
     keyConcepts,
     specificVocabulary,
@@ -1560,7 +1569,205 @@ Criterios de evaluación: ${activity.assessmentCriteria.join('; ')}.
 Variante sin tecnología: ${activity.noTechVariant}.
 Adaptación inclusiva: ${activity.inclusiveAdaptation}.`
 
+const generateOrientedMockProjectActivities = ({ project: input, learningContext: context }: ActivityGenerationInput): GeneratedActivities | null => {
+  const orientation = context.activityOrientation
+  if (!orientation) return null
+
+  const topic = detectTopicKnowledge(input)
+  const concepts = context.keyConcepts.slice(0, 5)
+  const mainConcept = concepts[0] ?? context.pedagogicalFocus.mainFocus
+  const relatedConcept = concepts[1] ?? context.pedagogicalFocus.applicationContext
+  const practicalMaterials = (topic?.materials ?? ['materiales disponibles', 'hojas', 'lápices', 'planilla de registro']).slice(0, 6)
+  const theoreticalMaterials = uniqueList(['texto breve o fuentes seleccionadas', 'glosario', 'fichas de conceptos', 'organizador gráfico', 'hojas y lápices'])
+  const criteria = context.assessmentIdeas.slice(0, 4)
+  const common = {
+    assessmentCriteria: criteria,
+    noTechVariant: 'usar fichas impresas, hojas, afiches y registros escritos a mano',
+    inclusiveAdaptation: 'ofrecer consignas por pasos, apoyos visuales y opciones de respuesta oral, escrita o gráfica'
+  }
+
+  if (orientation === 'practical') {
+    const introActivities = formatActivity({
+      ...common,
+      title: `Diseñar una solución para ${context.pedagogicalFocus.applicationContext}`,
+      purpose: `Aplicar ${mainConcept} y ${relatedConcept} para resolver un problema concreto.`,
+      studentInstructions: `Construyan o representen una primera solución vinculada con ${context.possibleProblems[0]} y registren cómo la hicieron.`,
+      steps: [
+        'Identifiquen el problema concreto y definan qué debería lograr la solución.',
+        'Seleccionen materiales y dibujen un diseño inicial.',
+        'Construyan, armen o simulen una primera versión.',
+        'Prueben su funcionamiento y registren observaciones.',
+        'Produzcan una versión mejorada a partir de la prueba.'
+      ],
+      materials: practicalMaterials,
+      estimatedTime: 'una o dos clases',
+      expectedProduct: `prototipo, producción o simulación inicial sobre ${mainConcept}`
+    })
+    const developmentActivities = formatActivity({
+      ...common,
+      title: `Probar y mejorar la producción sobre ${mainConcept}`,
+      purpose: 'Observar resultados, registrar evidencias y tomar decisiones de mejora.',
+      studentInstructions: 'Realicen pruebas comparables, registren qué ocurre y modifiquen una variable para mejorar el resultado.',
+      steps: [
+        'Definan qué van a observar o medir en cada prueba.',
+        'Prueben la producción en dos condiciones diferentes.',
+        'Registren resultados con el mismo criterio.',
+        'Comparen los registros y detecten un aspecto a mejorar.',
+        'Apliquen la mejora y documenten el resultado final.'
+      ],
+      materials: uniqueList([...practicalMaterials, 'tabla de registro', 'evidencias del proceso']).slice(0, 7),
+      estimatedTime: 'dos clases',
+      expectedProduct: 'producción mejorada con registro de pruebas'
+    })
+    const closingActivities = formatActivity({
+      ...common,
+      title: 'Presentar el producto final y demostrar su funcionamiento',
+      purpose: 'Comunicar el proceso realizado y justificar decisiones con evidencias.',
+      studentInstructions: 'Presenten el producto final, demuestren cómo funciona y expliquen qué cambiaron luego de probarlo.',
+      steps: [
+        'Seleccionen evidencias del diseño, la construcción y las pruebas.',
+        'Preparen una demostración breve del producto final.',
+        'Expliquen qué problema resuelve y qué materiales utilizaron.',
+        'Muestren una mejora realizada a partir de los registros.',
+        'Respondan preguntas del grupo sobre el proceso.'
+      ],
+      materials: uniqueList(['producto final', 'registros de pruebas', ...practicalMaterials]).slice(0, 7),
+      estimatedTime: 'una clase',
+      expectedProduct: 'producto final presentado con evidencias del proceso'
+    })
+
+    return {
+      introActivities,
+      developmentActivities,
+      closingActivities,
+      assessmentCriteria: criteria.map((item) => `- ${capitalize(item)}.`).join('\n'),
+      rubric: `Nivel avanzado: diseña, prueba y mejora una producción usando evidencias.\nNivel satisfactorio: construye o produce, registra pruebas y explica el resultado.\nNivel en proceso: completa la producción con apoyo y registra parte del proceso.\nNivel inicial: requiere guía paso a paso para realizar y explicar las acciones.`,
+      interdisciplinarySuggestions: context.curricularConnections.map((connection) => `- ${capitalize(connection)}.`).join('\n'),
+      adaptations: '- Consignas de acción divididas en pasos breves.\n- Roles diferenciados para diseñar, construir, probar, registrar y comunicar.\n- Modelos visuales y alternativas de materiales.',
+      requiredResources: uniqueList([...practicalMaterials, 'planilla de registro', 'materiales para el producto final']).join(', '),
+      estimatedTimeline: `Diseño y primera producción: 1 a 2 clases.\nPruebas y mejoras: 2 clases.\nPresentación del producto final: 1 clase.`,
+      studentReflectionQuestions: `- ¿Qué hicieron y qué resultado obtuvieron?\n- ¿Qué prueba les permitió mejorar la producción?\n- ¿Qué cambiarían en una nueva versión?`
+    }
+  }
+
+  if (orientation === 'theoretical') {
+    const introActivities = formatActivity({
+      ...common,
+      title: `Lectura guiada y glosario sobre ${mainConcept}`,
+      purpose: `Comprender los conceptos clave de ${context.pedagogicalFocus.mainFocus}.`,
+      studentInstructions: 'Lean la información seleccionada, identifiquen ideas centrales y elaboren definiciones propias con ejemplos.',
+      steps: [
+        `Respondan una pregunta inicial: ${context.possibleProblems[0]}`,
+        `Localicen información sobre ${concepts.slice(0, 3).join(', ')}.`,
+        'Subrayen ideas centrales y distingan ejemplos de definiciones.',
+        'Construyan un glosario con definiciones propias.',
+        'Escriban dos preguntas de comprensión para intercambiar.'
+      ],
+      materials: theoreticalMaterials,
+      estimatedTime: 'una clase',
+      expectedProduct: 'glosario comentado y respuestas de comprensión'
+    })
+    const developmentActivities = formatActivity({
+      ...common,
+      title: `Comparar y relacionar ideas sobre ${mainConcept}`,
+      purpose: `Analizar relaciones entre ${mainConcept} y ${relatedConcept}.`,
+      studentInstructions: 'Comparen explicaciones o casos, organicen semejanzas y diferencias, y construyan un mapa conceptual.',
+      steps: [
+        'Seleccionen dos casos o explicaciones del tema.',
+        'Completen un cuadro de semejanzas, diferencias y relaciones.',
+        `Respondan con fundamentos: ${context.possibleProblems[1] ?? context.possibleProblems[0]}`,
+        'Construyan un mapa conceptual con conectores claros.',
+        'Revisen el esquema usando el glosario.'
+      ],
+      materials: theoreticalMaterials,
+      estimatedTime: 'una o dos clases',
+      expectedProduct: 'cuadro comparativo y mapa conceptual'
+    })
+    const closingActivities = formatActivity({
+      ...common,
+      title: `Elaborar una explicación fundamentada sobre ${mainConcept}`,
+      purpose: 'Integrar conceptos y comunicar una conclusión clara.',
+      studentInstructions: 'Escriban o presenten una explicación que responda la pregunta central usando conceptos, comparaciones y ejemplos.',
+      steps: [
+        'Elijan la pregunta central que van a responder.',
+        'Organicen una idea principal y al menos tres ideas de apoyo.',
+        'Incluyan conceptos del glosario y un ejemplo pertinente.',
+        'Revisen claridad, relaciones y precisión conceptual.',
+        'Compartan la explicación y respondan una pregunta orientadora.'
+      ],
+      materials: theoreticalMaterials,
+      estimatedTime: 'una clase',
+      expectedProduct: 'explicación escrita, esquema argumentado o exposición breve'
+    })
+
+    return {
+      introActivities,
+      developmentActivities,
+      closingActivities,
+      assessmentCriteria: criteria.map((item) => `- ${capitalize(item)}.`).join('\n'),
+      rubric: `Nivel avanzado: explica, compara y relaciona conceptos con precisión y fundamentos.\nNivel satisfactorio: comprende las ideas centrales y elabora una explicación clara.\nNivel en proceso: reconoce conceptos, pero necesita apoyo para relacionarlos.\nNivel inicial: requiere guía para identificar y explicar las ideas principales.`,
+      interdisciplinarySuggestions: context.curricularConnections.map((connection) => `- ${capitalize(connection)}.`).join('\n'),
+      adaptations: '- Textos breves con ideas centrales destacadas.\n- Glosario visual y preguntas graduadas.\n- Opciones de explicación oral, escrita o mediante esquemas.',
+      requiredResources: theoreticalMaterials.join(', '),
+      estimatedTimeline: 'Comprensión y glosario: 1 clase.\nAnálisis y comparación: 1 a 2 clases.\nProducción escrita o esquema final: 1 clase.',
+      studentReflectionQuestions: context.possibleProblems.slice(0, 4).map((problem) => `- ${problem}`).join('\n')
+    }
+  }
+
+  const mixedSteps = (application: string, closing: string) => [
+    `Momento de comprensión: recuperen una explicación breve sobre ${mainConcept} y respondan una pregunta orientadora.`,
+    `Momento de aplicación: ${application}`,
+    `Momento de cierre/reflexión: ${closing}`
+  ]
+  const introActivities = formatActivity({
+    ...common,
+    title: `Comprender y representar ${mainConcept}`,
+    purpose: `Relacionar una idea central con una primera aplicación concreta.`,
+    studentInstructions: 'Revisen una explicación breve, aplíquenla en una representación concreta y expliquen la relación.',
+    steps: mixedSteps(`construyan un esquema o modelo simple que relacione ${mainConcept} con ${relatedConcept}.`, 'expliquen qué concepto aplicaron y qué duda permanece.'),
+    materials: uniqueList([...theoreticalMaterials.slice(0, 3), ...practicalMaterials.slice(0, 3)]),
+    estimatedTime: 'una clase',
+    expectedProduct: 'esquema o modelo con explicación conceptual breve'
+  })
+  const developmentActivities = formatActivity({
+    ...common,
+    title: `Analizar y aplicar una solución sobre ${mainConcept}`,
+    purpose: 'Equilibrar comprensión conceptual, aplicación y revisión.',
+    studentInstructions: 'Analicen los conceptos necesarios, resuelvan una situación concreta y revisen el resultado con evidencias.',
+    steps: mixedSteps(`diseñen, prueben o resuelvan una situación vinculada con ${context.possibleProblems[0]}.`, 'comparen el resultado con la explicación inicial y propongan una mejora.'),
+    materials: uniqueList([...theoreticalMaterials.slice(0, 3), ...practicalMaterials]).slice(0, 7),
+    estimatedTime: 'dos clases',
+    expectedProduct: 'aplicación concreta acompañada por una explicación'
+  })
+  const closingActivities = formatActivity({
+    ...common,
+    title: 'Integrar conceptos, producción y reflexión final',
+    purpose: 'Comunicar qué se comprendió, cómo se aplicó y qué se puede mejorar.',
+    studentInstructions: 'Presenten una síntesis breve, muestren la aplicación realizada y elaboren una reflexión final.',
+    steps: mixedSteps('seleccionen y presenten la producción o resolución más clara del proceso.', 'expliquen qué aprendieron, cómo lo aplicaron y qué cambiarían.'),
+    materials: uniqueList(['producciones y registros del proyecto', ...theoreticalMaterials.slice(0, 2), ...practicalMaterials.slice(0, 2)]),
+    estimatedTime: 'una clase',
+    expectedProduct: 'síntesis conceptual, producción aplicada y reflexión final'
+  })
+
+  return {
+    introActivities,
+    developmentActivities,
+    closingActivities,
+    assessmentCriteria: criteria.map((item) => `- ${capitalize(item)}.`).join('\n'),
+    rubric: `Nivel avanzado: comprende conceptos, los aplica con autonomía y reflexiona con evidencias.\nNivel satisfactorio: explica las ideas centrales y completa una aplicación concreta.\nNivel en proceso: comprende o aplica parcialmente y necesita apoyo para integrar ambos momentos.\nNivel inicial: requiere guía para comprender, aplicar y comunicar el proceso.`,
+    interdisciplinarySuggestions: context.curricularConnections.map((connection) => `- ${capitalize(connection)}.`).join('\n'),
+    adaptations: '- Explicaciones breves acompañadas por apoyos visuales.\n- Aplicaciones concretas con pasos y roles definidos.\n- Cierres mediante respuesta oral, escrita o gráfica.',
+    requiredResources: uniqueList([...theoreticalMaterials, ...practicalMaterials]).join(', '),
+    estimatedTimeline: 'Comprensión y primera aplicación: 1 clase.\nAplicación y revisión: 2 clases.\nCierre y reflexión: 1 clase.',
+    studentReflectionQuestions: `- ¿Qué concepto comprendieron y cómo lo aplicaron?\n- ¿Qué evidencia muestra que la aplicación funcionó?\n- ¿Qué relación encontraron entre la explicación y la práctica?`
+  }
+}
+
 const generateMockProjectActivities = ({ project: input, learningContext: context }: ActivityGenerationInput): GeneratedActivities => {
+  const orientedActivities = generateOrientedMockProjectActivities({ project: input, learningContext: context })
+  if (orientedActivities) return orientedActivities
+
   const topic = detectTopicKnowledge(input)
   const concepts = context.keyConcepts.slice(0, 6)
   const activities = context.handsOnActivities
@@ -1824,6 +2031,22 @@ Respondé únicamente JSON válido.`
 const pedagogicalFocusPromptInstruction = `Identificá el eje principal del proyecto según área, título y descripción. Si hay varios temas, diferenciá eje principal y contexto de aplicación. No generes actividades centradas únicamente en un tema secundario.`
 const targetAudiencePromptInstruction = `Adaptá el lenguaje, la profundidad conceptual y el tipo de consigna al nivel educativo, ciclo y curso. No formules preguntas pensadas para docentes o nivel superior si el destinatario es secundaria ciclo básico.
 Las preguntas para estudiantes deben ser claras, concretas y acordes a su edad. Evitá formulaciones abstractas como "producir conocimiento sobre..." salvo que el nivel sea superior o formación docente.`
+const activityOrientationPromptInstruction = (orientation: ActivityOrientation | null) => {
+  const generalRule = 'El docente puede seleccionar una orientación para las actividades: práctica, teórica o mixta. Si no hay orientación seleccionada, mantené una propuesta equilibrada general. Si hay orientación, adaptá las actividades a esa intención.'
+  if (orientation === 'practical') {
+    return `${generalRule}
+Orientación seleccionada: Práctica. Diseñá actividades centradas en la acción: construir, probar, experimentar, diseñar, manipular, registrar, producir o resolver un problema concreto. Incluí materiales, pasos concretos y un producto final. Reducí la explicación teórica extensa y usá consignas de acción.`
+  }
+  if (orientation === 'theoretical') {
+    return `${generalRule}
+Orientación seleccionada: Teórica. Diseñá actividades centradas en comprender conceptos, analizar información, comparar ideas, elaborar explicaciones, construir esquemas o responder preguntas de comprensión. Incluí conceptos clave, preguntas orientadoras y una producción escrita o esquema. No centres la propuesta en la construcción manual.`
+  }
+  if (orientation === 'mixed') {
+    return `${generalRule}
+Orientación seleccionada: Mixta. Diseñá actividades que combinen una instancia breve de comprensión teórica con una aplicación práctica concreta. Cada actividad debe incluir: 1. momento de comprensión, 2. momento de aplicación y 3. momento de cierre o reflexión. Equilibrá conceptos y producción.`
+  }
+  return generalRule
+}
 
 const buildActivitiesPrompt = ({ project: input, learningContext: context }: ActivityGenerationInput) => {
   return `Actuá como especialista en didáctica y diseño de propuestas pedagógicas para distintos niveles educativos.
@@ -1831,6 +2054,7 @@ const buildActivitiesPrompt = ({ project: input, learningContext: context }: Act
 Antes de generar, analizá el proyecto y usá el contexto disciplinar específico del tema, área y curso.
 ${pedagogicalFocusPromptInstruction}
 ${targetAudiencePromptInstruction}
+${activityOrientationPromptInstruction(context.activityOrientation)}
 No generes actividades genéricas.
 No uses frases vagas como “investigar el tema” sin explicar qué deben buscar, comparar, construir o producir.
 No uses “hacer una puesta en común” o “reflexionar sobre lo aprendido” si no indicás un producto, preguntas y pasos concretos.
@@ -1864,6 +2088,7 @@ Datos del proyecto:
 - Curso: ${trimText(input.course)}
 - Nivel educativo: ${trimText(input.educationalLevel)}
 - Ciclo educativo: ${trimText(input.educationalCycle)}
+- Orientación de actividades: ${context.activityOrientation ?? 'Sin definir'}
 - Área: ${trimText(input.area)}
 - Tipo de experiencia: ${trimText(input.experienceType)}
 - Descripción: ${trimText(input.description)}

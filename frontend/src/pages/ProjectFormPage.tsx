@@ -4,6 +4,7 @@ import { createProject, fetchProject, updateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import { educationalCycleOptions, educationalLevelOptions, updateEducationalTarget } from '../utils/education'
 import { getErrorMessage } from '../utils/ui'
+import { activityOrientationHelpText, activityOrientationOptions } from '../utils/activityOrientation'
 
 const initialState = {
   title: '',
@@ -12,6 +13,7 @@ const initialState = {
   course: '',
   educationalLevel: '',
   educationalCycle: '',
+  activityOrientation: '',
   area: '',
   experienceType: '',
   link: '',
@@ -130,6 +132,7 @@ export default function ProjectFormPage() {
           course: data.course,
           educationalLevel: data.educationalLevel ?? '',
           educationalCycle: data.educationalCycle ?? '',
+          activityOrientation: data.activityOrientation ?? '',
           area: data.area,
           experienceType: data.experienceType,
           link: data.link ?? '',
@@ -224,6 +227,13 @@ export default function ProjectFormPage() {
               <option value="">Seleccionar...</option>
               {educationalCycleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
+          </label>
+          <label>
+            Orientación de actividades
+            <select value={project.activityOrientation} onChange={(e) => setProject({ ...project, activityOrientation: e.target.value })}>
+              {activityOrientationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+            <small className="muted-text">{activityOrientationHelpText}</small>
           </label>
           <label>Área<input value={project.area} onChange={(e) => setProject({ ...project, area: e.target.value })} required /></label>
           <label>Tipo de experiencia<input value={project.experienceType} onChange={(e) => setProject({ ...project, experienceType: e.target.value })} required /></label>

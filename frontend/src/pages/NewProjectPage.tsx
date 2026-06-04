@@ -4,6 +4,7 @@ import { createProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import { educationalCycleOptions, educationalLevelOptions, updateEducationalTarget } from '../utils/education'
 import { getErrorMessage } from '../utils/ui'
+import { activityOrientationHelpText, activityOrientationOptions } from '../utils/activityOrientation'
 
 export default function NewProjectPage() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function NewProjectPage() {
     course: '',
     educationalLevel: '',
     educationalCycle: '',
+    activityOrientation: '',
     area: '',
     experienceType: '',
     description: '',
@@ -75,6 +77,13 @@ export default function NewProjectPage() {
             <option value="">Seleccionar...</option>
             {educationalCycleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
+        </label>
+        <label>
+          Orientación de actividades
+          <select value={form.activityOrientation} onChange={(e) => setForm({ ...form, activityOrientation: e.target.value })}>
+            {activityOrientationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <small className="muted-text">{activityOrientationHelpText}</small>
         </label>
         <label>
           Área o materia

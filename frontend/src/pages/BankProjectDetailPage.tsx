@@ -6,6 +6,7 @@ import { Project } from '../types'
 import { getErrorMessage } from '../utils/ui'
 import EvidenceSection from '../components/EvidenceSection'
 import ProjectSourcesSection from '../components/ProjectSourcesSection'
+import { getActivityOrientationLabel } from '../utils/activityOrientation'
 
 export default function BankProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -170,6 +171,7 @@ export default function BankProjectDetailPage() {
           <div><strong>Curso</strong><p>{project.course}</p></div>
           <div><strong>Nivel educativo</strong><p>{project.educationalLevel || 'No especificado'}</p></div>
           <div><strong>Ciclo educativo</strong><p>{project.educationalCycle || 'No especificado'}</p></div>
+          <div><strong>Orientación de actividades</strong><p>{getActivityOrientationLabel(project.activityOrientation)}</p></div>
           <div><strong>Tipo de experiencia</strong><p>{project.experienceType}</p></div>
           <div><strong>Reutilizable</strong><p>{project.isReusable ? 'Sí' : 'No'}</p></div>
           <div><strong>Publicado</strong><p>{new Date(project.createdAt).toLocaleDateString('es-AR')}</p></div>

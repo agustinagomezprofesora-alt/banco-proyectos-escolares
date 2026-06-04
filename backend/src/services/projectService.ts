@@ -9,6 +9,7 @@ export interface ProjectCreateData {
   course: string
   educationalLevel?: string | null
   educationalCycle?: string | null
+  activityOrientation?: string | null
   area: string
   experienceType: string
   link?: string | null
@@ -24,6 +25,7 @@ export interface ProjectUpdateData {
   course?: string
   educationalLevel?: string | null
   educationalCycle?: string | null
+  activityOrientation?: string | null
   area?: string
   experienceType?: string
   link?: string | null

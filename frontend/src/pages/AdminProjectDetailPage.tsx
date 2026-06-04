@@ -7,6 +7,7 @@ import EvidenceSection from '../components/EvidenceSection'
 import Button from '../components/ui/Button'
 import ProjectActionCards, { type ProjectActionCardGroup } from '../components/project/ProjectActionCards'
 import ProjectSourcesSection from '../components/ProjectSourcesSection'
+import { getActivityOrientationLabel } from '../utils/activityOrientation'
 
 const fichaSections: Array<{ key: keyof Project; title: string }> = [
   { key: 'generatedSummary', title: 'Resumen institucional' },
@@ -341,6 +342,7 @@ export default function AdminProjectDetailPage() {
           <div><strong>Curso</strong><p>{project.course}</p></div>
           <div><strong>Nivel educativo</strong><p>{project.educationalLevel || 'No especificado'}</p></div>
           <div><strong>Ciclo educativo</strong><p>{project.educationalCycle || 'No especificado'}</p></div>
+          <div><strong>Orientación de actividades</strong><p>{getActivityOrientationLabel(project.activityOrientation)}</p></div>
           <div><strong>Área</strong><p>{project.area}</p></div>
           <div><strong>Tipo de experiencia</strong><p>{project.experienceType}</p></div>
           <div><strong>Reutilizable</strong><p>{project.isReusable ? 'Sí' : 'No'}</p></div>

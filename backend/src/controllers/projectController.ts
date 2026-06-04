@@ -76,6 +76,7 @@ const baseFields = [
   'course',
   'educationalLevel',
   'educationalCycle',
+  'activityOrientation',
   'area',
   'experienceType',
   'link',
@@ -111,7 +112,7 @@ const buildUpdateData = (data: Record<string, any>) => {
 
   for (const field of baseFields) {
     if (Object.prototype.hasOwnProperty.call(data, field)) {
-      updateData[field] = ['link', 'educationalLevel', 'educationalCycle'].includes(field) && data[field] === ''
+      updateData[field] = ['link', 'educationalLevel', 'educationalCycle', 'activityOrientation'].includes(field) && data[field] === ''
         ? null
         : data[field]
     }
@@ -157,6 +158,7 @@ const buildAIInput = (
   course: project.course,
   educationalLevel: project.educationalLevel,
   educationalCycle: project.educationalCycle,
+  activityOrientation: project.activityOrientation,
   area: project.area,
   experienceType: project.experienceType,
   link: project.link,
@@ -355,6 +357,7 @@ export const duplicateProject = async (req: AuthRequest, res: Response) => {
       course: original.course,
       educationalLevel: original.educationalLevel,
       educationalCycle: original.educationalCycle,
+      activityOrientation: original.activityOrientation,
       area: original.area,
       experienceType: original.experienceType,
       link: original.link,
@@ -387,6 +390,7 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       course: data.course,
       educationalLevel: data.educationalLevel || null,
       educationalCycle: data.educationalCycle || null,
+      activityOrientation: data.activityOrientation || null,
       area: data.area,
       experienceType: data.experienceType,
       link: data.link || null,

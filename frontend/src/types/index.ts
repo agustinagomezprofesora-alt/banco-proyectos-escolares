@@ -15,6 +15,7 @@ export interface Project {
   course: string
   educationalLevel?: string | null
   educationalCycle?: string | null
+  activityOrientation?: 'practical' | 'theoretical' | 'mixed' | null
   area: string
   experienceType: string
   link?: string | null
