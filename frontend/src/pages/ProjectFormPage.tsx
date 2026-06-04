@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { createProject, fetchProject, updateProject } from '../api/api'
+import { addProjectUrlSource, createProject, fetchProject, updateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import { educationalCycleOptions, educationalLevelOptions, updateEducationalTarget } from '../utils/education'
 import { getErrorMessage } from '../utils/ui'
@@ -17,6 +17,7 @@ const initialState = {
   area: '',
   experienceType: '',
   link: '',
+  referenceUrl: '',
   isReusable: false,
   status: 'Cargado',
   improvedTitle: '',
@@ -136,6 +137,7 @@ export default function ProjectFormPage() {
           area: data.area,
           experienceType: data.experienceType,
           link: data.link ?? '',
+          referenceUrl: '',
           isReusable: data.isReusable,
           status: data.status,
           improvedTitle: data.improvedTitle ?? '',
@@ -185,10 +187,15 @@ export default function ProjectFormPage() {
     setSaving(true)
     setError('')
     try {
+      const { referenceUrl, ...projectPayload } = project
+      let savedProject
       if (isEdit && id) {
-        await updateProject(Number(id), project)
+        savedProject = await updateProject(Number(id), projectPayload)
       } else {
-        await createProject(project)
+        savedProject = await createProject(projectPayload)
+      }
+      if (referenceUrl.trim()) {
+        await addProjectUrlSource(savedProject.id, { url: referenceUrl.trim(), sourceType: 'Página web' })
       }
       navigate(isAdminRoute && id ? `/admin/projects/${id}` : '/projects')
     } catch (err: any) {
@@ -238,6 +245,16 @@ export default function ProjectFormPage() {
           <label>Área<input value={project.area} onChange={(e) => setProject({ ...project, area: e.target.value })} required /></label>
           <label>Tipo de experiencia<input value={project.experienceType} onChange={(e) => setProject({ ...project, experienceType: e.target.value })} required /></label>
           <label>Link de evidencia<input value={project.link} onChange={(e) => setProject({ ...project, link: e.target.value })} /></label>
+          <label>
+            URL de referencia
+            <input
+              type="url"
+              value={project.referenceUrl}
+              onChange={(e) => setProject({ ...project, referenceUrl: e.target.value })}
+              placeholder="Pegá un enlace relacionado con el proyecto, por ejemplo una página educativa, documento, video o recurso web."
+            />
+            <small className="muted-text">La app intentará usar esta fuente para enriquecer las actividades y materiales. Si no se puede leer, se usará el contexto interno del proyecto.</small>
+          </label>
           <label className="checkbox-label">
             <input type="checkbox" checked={project.isReusable} onChange={(e) => setProject({ ...project, isReusable: e.target.checked })} />
             Reutilizable

@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createProject } from '../api/api'
+import { addProjectUrlSource, createProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import { educationalCycleOptions, educationalLevelOptions, updateEducationalTarget } from '../utils/education'
 import { getErrorMessage } from '../utils/ui'
@@ -22,6 +22,7 @@ export default function NewProjectPage() {
     experienceType: '',
     description: '',
     link: '',
+    referenceUrl: '',
     isReusable: false
   })
 
@@ -30,8 +31,12 @@ export default function NewProjectPage() {
     setLoading(true)
     setError('')
     try {
-      await createProject({ ...form, link: form.link || null, status: 'Cargado' } as any)
-      navigate('/projects')
+      const { referenceUrl, ...projectPayload } = form
+      const created = await createProject({ ...projectPayload, link: form.link || null, status: 'Cargado' } as any)
+      if (referenceUrl.trim()) {
+        await addProjectUrlSource(created.id, { url: referenceUrl.trim(), sourceType: 'Página web' })
+      }
+      navigate(`/projects/${created.id}`)
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudo guardar el proyecto.'))
     } finally {
@@ -110,6 +115,16 @@ export default function NewProjectPage() {
         <label>
           Link de evidencia
           <input value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} type="url" />
+        </label>
+        <label>
+          URL de referencia
+          <input
+            value={form.referenceUrl}
+            onChange={(e) => setForm({ ...form, referenceUrl: e.target.value })}
+            type="url"
+            placeholder="Pegá un enlace relacionado con el proyecto, por ejemplo una página educativa, documento, video o recurso web."
+          />
+          <small className="muted-text">La app intentará usar esta fuente para enriquecer las actividades y materiales. Si no se puede leer, se usará el contexto interno del proyecto.</small>
         </label>
         <label className="checkbox-label">
           <input type="checkbox" checked={form.isReusable} onChange={(e) => setForm({ ...form, isReusable: e.target.checked })} />

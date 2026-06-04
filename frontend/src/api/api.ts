@@ -1,4 +1,4 @@
-import { EnrichedProjectContextResponse, GeneratedProjectResponse, InstitutionSettings, Project, ProjectFile, ProjectLink, ProjectStats, WebSearchStatus } from '../types'
+import { EnrichedProjectContextResponse, GeneratedProjectResponse, InstitutionSettings, Project, ProjectFile, ProjectLink, ProjectSource, ProjectStats, UrlSourceResponse, WebSearchStatus } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
 
@@ -126,6 +126,15 @@ export const enrichProjectContext = (id: number) =>
 
 export const fetchWebSearchStatus = () =>
   request<WebSearchStatus>('/projects/web-search-status')
+
+export const fetchProjectSources = (projectId: number) =>
+  request<ProjectSource[]>(`/projects/${projectId}/sources`)
+
+export const addProjectUrlSource = (projectId: number, payload: { url: string; description?: string; sourceType?: string }) =>
+  request<UrlSourceResponse>(`/projects/${projectId}/sources/url`, { method: 'POST', body: JSON.stringify(payload) })
+
+export const deleteProjectSource = (projectId: number, sourceId: number) =>
+  request<Record<string, never>>(`/projects/${projectId}/sources/${sourceId}`, { method: 'DELETE' })
 
 export const generateActivities = (id: number) =>
   request<GeneratedProjectResponse>(`/projects/${id}/generate-activities`, { method: 'POST' })

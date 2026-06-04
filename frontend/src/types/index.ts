@@ -157,9 +157,29 @@ export interface ProjectSource {
   url: string
   snippet?: string | null
   note?: string | null
+  description?: string | null
+  summary?: string | null
+  extractedText?: string | null
+  status?: 'success' | 'partial' | 'failed' | null
+  origin?: string | null
   sourceType?: string | null
   accessedAt: string
   createdAt?: string
+}
+
+export interface UrlSourceResponse {
+  source: ProjectSource
+  analysis: {
+    url: string
+    title?: string
+    description?: string
+    extractedText?: string
+    sourceType?: string
+    accessedAt: string
+    status: 'success' | 'partial' | 'failed'
+    errorMessage?: string
+  }
+  message: string
 }
 
 export type WebSearchProvider = 'none' | 'wikipedia' | 'tavily' | 'brave' | 'serpapi'
