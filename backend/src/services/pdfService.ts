@@ -50,6 +50,7 @@ type PdfProject = {
   closingMessage?: string | null
   links?: Array<{ label: string; url: string }>
   files?: Array<{ originalName: string; url?: string | null }>
+  sources?: Array<{ title: string; url: string; accessedAt: Date | string }>
 }
 
 type PdfSettings = {
@@ -313,6 +314,21 @@ export const generateProjectPdf = async (project: PdfProject, settings?: PdfSett
         .fillColor('#0f172a')
         .text('Evidencias y recursos', { width: contentWidth })
       addSection(doc, 'Links y archivos adjuntos', evidenceText, contentWidth)
+    }
+
+    const sourceItems = (project.sources ?? [])
+      .filter((source) => hasValue(source.title) && hasValue(source.url))
+      .map((source) => `${source.title}\n${source.url}\nConsultado el ${formatDate(source.accessedAt)}`)
+    const sourcesText = formatEvidenceList(sourceItems)
+
+    if (hasValue(sourcesText)) {
+      doc.moveDown(0.8)
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(13)
+        .fillColor('#0f172a')
+        .text('Fuentes consultadas', { width: contentWidth })
+      addSection(doc, 'Fuentes educativas utilizadas', sourcesText, contentWidth)
     }
 
     const range = doc.bufferedPageRange()

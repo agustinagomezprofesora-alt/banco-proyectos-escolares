@@ -58,6 +58,7 @@ export interface Project {
   closingMessage?: string | null
   links?: ProjectLink[]
   files?: ProjectFile[]
+  sources?: ProjectSource[]
   author: {
     id: number
     name: string
@@ -70,6 +71,7 @@ export type GenerationMode = 'mock' | 'ai' | 'fallback'
 
 export type GeneratedProjectResponse = Project & {
   generationMode?: GenerationMode
+  sourceUsage?: 'web' | 'internal'
 }
 
 export interface ProjectLink {
@@ -143,6 +145,28 @@ export interface ProjectFile {
   size: number
   url: string
   createdAt: string
+}
+
+export interface ProjectSource {
+  id?: number
+  projectId?: number
+  title: string
+  url: string
+  snippet?: string | null
+  note?: string | null
+  sourceType?: string | null
+  accessedAt: string
+  createdAt?: string
+}
+
+export interface EnrichedProjectContextResponse {
+  query: string
+  provider: string
+  searchPerformed: boolean
+  sources: ProjectSource[]
+  context: unknown
+  sourceUsage: 'web' | 'internal'
+  message: string
 }
 
 export interface ProjectStats {

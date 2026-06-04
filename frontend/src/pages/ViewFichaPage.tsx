@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { downloadProjectPdf, downloadProjectPptx, fetchProject, generateActivities, generateGames, generatePresentation, submitProjectReview, updateProject } from '../api/api'
 import { useAuth } from '../context/AuthContext'
@@ -7,6 +7,7 @@ import { getErrorMessage, getStatusBadgeClass, normalizeStatus } from '../utils/
 import EvidenceSection from '../components/EvidenceSection'
 import Button from '../components/ui/Button'
 import ProjectActionCards, { type ProjectActionCardGroup } from '../components/project/ProjectActionCards'
+import ProjectSourcesSection from '../components/ProjectSourcesSection'
 
 const fichaFields: Array<{ key: keyof Project; title: string }> = [
   { key: 'generatedSummary', title: 'Resumen institucional' },
@@ -74,6 +75,9 @@ export default function ViewFichaPage() {
   const [activitiesMode, setActivitiesMode] = useState<GenerationMode | undefined>(undefined)
   const [gamesMode, setGamesMode] = useState<GenerationMode | undefined>(undefined)
   const [presentationMode, setPresentationMode] = useState<GenerationMode | undefined>(undefined)
+  const [generationStatus, setGenerationStatus] = useState('')
+  const [sourceUsageNotice, setSourceUsageNotice] = useState('')
+  const generationTimers = useRef<ReturnType<typeof setTimeout>[]>([])
   const [editData, setEditData] = useState<Partial<Project>>({})
 
   useEffect(() => {
@@ -149,8 +153,33 @@ export default function ViewFichaPage() {
     }
   }
 
+  const startGenerationStatus = () => {
+    generationTimers.current.forEach(clearTimeout)
+    setSourceUsageNotice(project?.sources?.length
+      ? 'Hay fuentes educativas consultadas; se usarán únicamente las pertinentes al tema.'
+      : 'No hay fuentes externas disponibles. Se usará contexto interno del proyecto.')
+    setGenerationStatus('Analizando el tema del proyecto...')
+    generationTimers.current = [
+      setTimeout(() => setGenerationStatus('Construyendo contexto pedagógico...'), 600),
+      setTimeout(() => setGenerationStatus('Generando materiales específicos...'), 1400)
+    ]
+  }
+
+  const stopGenerationStatus = () => {
+    generationTimers.current.forEach(clearTimeout)
+    generationTimers.current = []
+    setGenerationStatus('')
+  }
+
+  const reportSourceUsage = (usage?: 'web' | 'internal') => {
+    setSourceUsageNotice(usage === 'web'
+      ? 'La generación usó fuentes educativas pertinentes y visibles.'
+      : 'La generación usó el contexto interno del proyecto porque no había fuentes externas pertinentes.')
+  }
+
   const handleGenerateActivities = async () => {
     if (!project) return
+    startGenerationStatus()
     setGeneratingActivities(true)
     setError('')
     try {
@@ -158,15 +187,18 @@ export default function ViewFichaPage() {
       setProject(updated)
       setEditData(updated)
       setActivitiesMode(updated.generationMode)
+      reportSourceUsage(updated.sourceUsage)
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudieron generar las actividades.'))
     } finally {
       setGeneratingActivities(false)
+      stopGenerationStatus()
     }
   }
 
   const handleGenerateGames = async () => {
     if (!project) return
+    startGenerationStatus()
     setGeneratingGames(true)
     setError('')
     try {
@@ -174,15 +206,18 @@ export default function ViewFichaPage() {
       setProject(updated)
       setEditData(updated)
       setGamesMode(updated.generationMode)
+      reportSourceUsage(updated.sourceUsage)
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudieron generar los juegos.'))
     } finally {
       setGeneratingGames(false)
+      stopGenerationStatus()
     }
   }
 
   const handleGeneratePresentation = async () => {
     if (!project) return
+    startGenerationStatus()
     setGeneratingPresentation(true)
     setError('')
     try {
@@ -190,10 +225,12 @@ export default function ViewFichaPage() {
       setProject(updated)
       setEditData(updated)
       setPresentationMode(updated.generationMode)
+      reportSourceUsage(updated.sourceUsage)
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudo generar la presentación.'))
     } finally {
       setGeneratingPresentation(false)
+      stopGenerationStatus()
     }
   }
 
@@ -294,6 +331,8 @@ export default function ViewFichaPage() {
 
       <ProjectActionCards groups={actionGroups} />
 
+      {generationStatus && <div className="muted-text">{generationStatus}</div>}
+      {sourceUsageNotice && <div className="muted-text">{sourceUsageNotice}</div>}
       {error && <div className="error">{error}</div>}
       {generationMode && (
         <div className="success">
@@ -438,6 +477,16 @@ export default function ViewFichaPage() {
               })}
             </section>
           )}
+
+          <ProjectSourcesSection
+            projectId={project.id}
+            initialSources={project.sources}
+            canSearch
+            onSourcesUpdated={(sources) => {
+              setProject((current) => current ? { ...current, sources } : current)
+              setEditData((current) => ({ ...current, sources }))
+            }}
+          />
 
           <EvidenceSection
             projectId={project.id}

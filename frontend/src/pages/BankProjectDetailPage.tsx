@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { Project } from '../types'
 import { getErrorMessage } from '../utils/ui'
 import EvidenceSection from '../components/EvidenceSection'
+import ProjectSourcesSection from '../components/ProjectSourcesSection'
 
 export default function BankProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -234,6 +235,8 @@ export default function BankProjectDetailPage() {
           ))}
         </section>
       )}
+
+      <ProjectSourcesSection projectId={project.id} initialSources={project.sources} />
 
       <EvidenceSection
         projectId={project.id}

@@ -1,4 +1,5 @@
 const pptxgen = require('pptxgenjs')
+import { analyzeProjectPedagogicalFocus, buildProjectLearningContext } from './aiService'
 
 type PptxProject = {
   id: number
@@ -36,6 +37,7 @@ type PptxProject = {
   closingMessage?: string | null
   links?: Array<{ label?: string | null; url?: string | null }>
   files?: Array<{ originalName?: string | null; url?: string | null }>
+  sources?: Array<{ title?: string | null; url?: string | null; snippet?: string | null; note?: string | null; sourceType?: string | null; accessedAt?: Date | string | null }>
 }
 
 type PptxSettings = {
@@ -230,6 +232,18 @@ const buildEvidenceBullets = (project: PptxProject) => {
   return [...evidence, ...links, ...files].slice(0, 5)
 }
 
+const buildSourceBullets = (project: PptxProject) => (project.sources ?? [])
+  .map((source) => {
+    const title = cleanSingleLine(source.title)
+    const url = cleanSingleLine(source.url)
+    const accessedAt = source.accessedAt ? new Date(source.accessedAt) : null
+    const date = accessedAt && !Number.isNaN(accessedAt.getTime()) ? accessedAt.toLocaleDateString('es-AR') : ''
+    if (!title || !url) return ''
+    return `${title}. ${url}${date ? ` Consultado el ${date}.` : ''}`
+  })
+  .filter(Boolean)
+  .slice(0, 5)
+
 const firstNonEmpty = (...values: Array<string | null | undefined>) => {
   for (const value of values) {
     const text = cleanSingleLine(value)
@@ -242,19 +256,40 @@ const fallbackBullets = (items: string[]) => items.map(cleanSingleLine).filter(B
 
 const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): DeckSlide[] => {
   const parsedSlides = parseSlides(project.slides)
+  const pedagogicalInput = {
+    title: project.title,
+    description: project.description ?? '',
+    teacher: project.teacher ?? '',
+    course: project.course ?? '',
+    area: project.area ?? '',
+    experienceType: project.experienceType ?? '',
+    generatedSummary: project.generatedSummary,
+    objectives: project.objectives,
+    mainActivities: project.mainActivities,
+    evidenceDescription: project.evidenceDescription,
+    suggestedTags: project.suggestedTags,
+    links: (project.links ?? []).map((link) => ({ label: cleanSingleLine(link.label), url: cleanSingleLine(link.url) })),
+    files: (project.files ?? []).map((file) => ({ originalName: cleanSingleLine(file.originalName) })),
+    webSources: (project.sources ?? []).map((source) => ({
+      title: cleanSingleLine(source.title),
+      url: cleanSingleLine(source.url),
+      snippet: cleanSingleLine(source.note || source.snippet),
+      sourceType: cleanSingleLine(source.sourceType),
+      accessedAt: source.accessedAt ? new Date(source.accessedAt).toISOString() : new Date().toISOString()
+    }))
+  }
+  const focus = analyzeProjectPedagogicalFocus(pedagogicalInput)
+  const learningContext = buildProjectLearningContext(pedagogicalInput, focus)
   const title = firstNonEmpty(project.presentationTitle, project.improvedTitle, project.title, 'Presentación del proyecto')
   const subtitle = firstNonEmpty(project.presentationSubtitle, `${cleanSingleLine(project.area)} - ${cleanSingleLine(project.course)}`)
   const visualSuggestion = firstNonEmpty(project.visualSuggestions, 'Imagen o evidencia representativa del proyecto')
   const materials = buildMaterialBullets(project)
-
-  const objectives = [
-    ...findParsedSlideBullets(parsedSlides, ['objetivo'], 5),
-    ...splitBulletText(project.objectives, 5)
-  ].slice(0, 5)
+  const sourceBullets = buildSourceBullets(project)
 
   const development = [
     ...findParsedSlideBullets(parsedSlides, ['desarrollo', 'actividad', 'proceso'], 5),
-    ...splitBulletText(project.mainActivities, 5)
+    ...splitBulletText(project.mainActivities, 5),
+    ...learningContext.handsOnActivities
   ].slice(0, 5)
 
   const slides: DeckSlide[] = [
@@ -273,44 +308,36 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
       accent: settings.primaryColor
     },
     {
-      title: 'Punto de partida',
-      subtitle: firstNonEmpty(project.experienceType, 'Contexto de la experiencia'),
-      bullets: splitBulletText(project.generatedSummary || project.description, 5),
-      sideTitle: 'Dato clave',
-      sideText: firstNonEmpty(project.course, project.area, project.teacher),
+      title: 'Problema o pregunta trabajada',
+      subtitle: firstNonEmpty(project.experienceType, 'Punto de partida'),
+      bullets: learningContext.possibleProblems.slice(0, 5),
+      sideTitle: 'Tema',
+      sideText: learningContext.topicSummary,
       accent: settings.accentColor
     },
     {
-      title: 'Objetivos',
-      subtitle: 'Propósitos pedagógicos',
-      bullets: objectives.length ? objectives : fallbackBullets(['Organizar la experiencia pedagógica.', 'Registrar aprendizajes y producciones.', 'Socializar el proceso con la comunidad educativa.']),
-      sideTitle: 'Enfoque',
-      sideText: firstNonEmpty(project.area, project.experienceType),
+      title: 'Conceptos clave',
+      subtitle: firstNonEmpty(project.area, 'Contenido disciplinar'),
+      bullets: learningContext.keyConcepts.slice(0, 5),
+      sideTitle: 'Vocabulario específico',
+      sideText: learningContext.specificVocabulary.slice(0, 6).join(', '),
       accent: '16A34A'
     },
     {
-      title: 'Desarrollo',
+      title: 'Cómo desarrollamos la experiencia',
       subtitle: 'Proceso de trabajo',
-      bullets: development.length ? development : fallbackBullets(['Presentación de la propuesta.', 'Trabajo con estudiantes.', 'Producción, revisión y socialización.']),
+      bullets: development,
       sideTitle: 'Sugerencia visual',
       sideText: visualSuggestion,
       accent: settings.primaryColor
     },
     {
-      title: 'Recursos utilizados',
-      subtitle: 'Materiales, espacios y herramientas',
-      bullets: splitBulletText(project.resourcesUsed, 5).length ? splitBulletText(project.resourcesUsed, 5) : fallbackBullets(['Recursos disponibles en la institución.', 'Materiales producidos por docentes y estudiantes.', 'Herramientas digitales o analógicas según la propuesta.']),
-      sideTitle: 'Area',
-      sideText: firstNonEmpty(project.area, 'Proyecto interdisciplinario'),
+      title: 'Actividad práctica principal',
+      subtitle: 'Acción, registro y producto',
+      bullets: learningContext.handsOnActivities.slice(0, 5),
+      sideTitle: 'Criterio de trabajo',
+      sideText: learningContext.assessmentIdeas[0],
       accent: '0891B2'
-    },
-    {
-      title: 'Producciones',
-      subtitle: 'Resultados visibles del proyecto',
-      bullets: splitBulletText(project.finalProducts, 5).length ? splitBulletText(project.finalProducts, 5) : fallbackBullets(['Producciones finales de estudiantes.', 'Registro institucional del proceso.', 'Material reutilizable para nuevas experiencias.']),
-      sideTitle: 'Producto final',
-      sideText: firstNonEmpty(project.finalProducts, project.title),
-      accent: settings.accentColor
     },
     {
       title: 'Evidencias',
@@ -319,10 +346,27 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
       sideTitle: 'Banco institucional',
       sideText: 'Las evidencias ayudan a recuperar y reutilizar la experiencia.',
       accent: '0F766E'
+    },
+    {
+      title: 'Aprendizajes específicos',
+      subtitle: 'Qué observar y evaluar',
+      bullets: learningContext.assessmentIdeas.slice(0, 5),
+      sideTitle: 'Conexiones curriculares',
+      sideText: learningContext.curricularConnections.slice(0, 4).join(', '),
+      accent: settings.accentColor
     }
   ]
 
-  if (materials.length) {
+  if (sourceBullets.length) {
+    slides.push({
+      title: 'Fuentes consultadas',
+      subtitle: 'Referencias educativas utilizadas',
+      bullets: sourceBullets,
+      sideTitle: 'Citas verificables',
+      sideText: 'Solo se incluyen fuentes recuperadas realmente, con URL y fecha de consulta.',
+      accent: '0F766E'
+    })
+  } else if (materials.length) {
     slides.push({
       title: 'Materiales generados',
       subtitle: 'Juegos y recursos visuales derivados',
@@ -333,11 +377,11 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
     })
   } else {
     slides.push({
-      title: 'Aprendizajes',
-      subtitle: 'Aportes de la experiencia',
-      bullets: splitBulletText(project.improvementSuggestions, 5).length ? splitBulletText(project.improvementSuggestions, 5) : fallbackBullets(['Aprendizajes pedagógicos recuperados.', 'Aspectos a sostener en futuras implementaciones.', 'Oportunidades de mejora para nuevas ediciones.']),
-      sideTitle: 'Memoria pedagógica',
-      sideText: 'Registrar también permite volver a pensar la práctica.',
+      title: 'Juegos y recursos posibles',
+      subtitle: 'Vocabulario específico para reutilizar',
+      bullets: learningContext.gameConcepts.slice(0, 5),
+      sideTitle: 'Recursos visuales',
+      sideText: 'Estos conceptos pueden convertirse en sopa de letras, bingo, memotest o tarjetas.',
       accent: '9333EA'
     })
   }

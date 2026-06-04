@@ -54,10 +54,19 @@ export interface BingoCard {
   grid: string[][]
 }
 
-const trimText = (value: string | null | undefined) => (value || '').trim()
+const trimText = (value: unknown) => {
+  if (typeof value === 'string') return value.trim()
+  if (value == null) return ''
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
 
-function safeJsonParse<T>(value?: string | null): T | undefined {
-  if (!value) return undefined
+function safeJsonParse<T>(value?: unknown): T | undefined {
+  if (value == null) return undefined
+  if (typeof value !== 'string') return value as T
   const trimmed = value.trim()
   if (!trimmed) return undefined
   try {
@@ -68,7 +77,8 @@ function safeJsonParse<T>(value?: string | null): T | undefined {
 }
 
 export function safeParseJson<T>(value: unknown, fallback: T): T {
-  if (value == null) return fallback
+  if (value == null || value === '') return fallback
+  if (Array.isArray(value)) return value as T
   if (typeof value !== 'string') return value as T
   try {
     return JSON.parse(value) as T
@@ -86,7 +96,7 @@ const splitBlocks = (text: string) =>
 const removeNumberPrefix = (text: string) => text.replace(/^\s*\d+\.\s*/, '').trim()
 
 const parseAnswerValue = (text: string) => {
-  const match = text.match(/(?:Respuesta|Answer|Respuest[oa])\s*[:\-]?\s*(.+)/i)
+  const match = text.match(/(?:Respuesta(?:\s+sugerida)?|Answer|Respuest[oa])\s*[:\-]?\s*(.+)/i)
   return match ? match[1].trim() : undefined
 }
 
@@ -94,17 +104,19 @@ const parseWordsFromText = (text: string) => {
   if (!text) return []
   const afterColon = text.includes(':') ? text.split(':').slice(1).join(':') : text
   return afterColon
-    .split(/[\n,;•·]/)
+    .split(/[\n,;•·-]+/)
     .map((word) => word.trim())
     .filter(Boolean)
 }
 
-const normalizeWordSearch = (word: string): string => {
+export const normalizeWord = (word: unknown): string => {
   return word
+    ? String(word)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^A-Za-zÑñ]/g, '')
     .toUpperCase()
+    : ''
 }
 
 const randomLetter = () => {
@@ -113,10 +125,7 @@ const randomLetter = () => {
 }
 
 export const generateWordSearch = (words: string[], size = 12): string[][] => {
-  const gridSize = Math.max(12, size)
-  const grid: string[][] = Array.from({ length: gridSize }, () =>
-    Array.from({ length: gridSize }, () => '')
-  )
+  const gridSize = Math.max(12, Math.min(15, size))
 
   const directions = [
     { row: 0, col: 1 },
@@ -126,11 +135,16 @@ export const generateWordSearch = (words: string[], size = 12): string[][] => {
   ]
 
   const cleanWords = words
-    .map(normalizeWordSearch)
+    .map(normalizeWord)
     .filter((word) => word.length >= 3 && word.length <= gridSize)
+    .filter((word, index, list) => list.indexOf(word) === index)
+    .sort((a, b) => b.length - a.length)
     .slice(0, 12)
 
-  function canPlace(word: string, row: number, col: number, dir: { row: number; col: number }) {
+  const createEmptyGrid = () =>
+    Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => ''))
+
+  function canPlace(grid: string[][], word: string, row: number, col: number, dir: { row: number; col: number }) {
     for (let i = 0; i < word.length; i += 1) {
       const r = row + dir.row * i
       const c = col + dir.col * i
@@ -142,13 +156,20 @@ export const generateWordSearch = (words: string[], size = 12): string[][] => {
     return true
   }
 
-  function placeWord(word: string) {
-    for (let attempt = 0; attempt < 150; attempt += 1) {
-      const dir = directions[Math.floor(Math.random() * directions.length)]
-      const row = Math.floor(Math.random() * gridSize)
-      const col = Math.floor(Math.random() * gridSize)
+  function placeWord(grid: string[][], word: string) {
+    const candidates = directions
+      .flatMap((dir) =>
+        Array.from({ length: gridSize * gridSize }, (_, index) => ({
+          dir,
+          row: Math.floor(index / gridSize),
+          col: index % gridSize,
+          order: Math.random()
+        }))
+      )
+      .sort((a, b) => a.order - b.order)
 
-      if (canPlace(word, row, col, dir)) {
+    for (const { dir, row, col } of candidates) {
+      if (canPlace(grid, word, row, col, dir)) {
         for (let i = 0; i < word.length; i += 1) {
           const r = row + dir.row * i
           const c = col + dir.col * i
@@ -161,7 +182,21 @@ export const generateWordSearch = (words: string[], size = 12): string[][] => {
     return false
   }
 
-  cleanWords.forEach(placeWord)
+  let grid = createEmptyGrid()
+  let bestGrid = grid
+  let bestPlaced = -1
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const candidateGrid = createEmptyGrid()
+    const placed = cleanWords.filter((word) => placeWord(candidateGrid, word)).length
+    if (placed > bestPlaced) {
+      bestGrid = candidateGrid
+      bestPlaced = placed
+    }
+    if (placed === cleanWords.length) break
+  }
+
+  grid = bestGrid
 
   for (let r = 0; r < gridSize; r += 1) {
     for (let c = 0; c < gridSize; c += 1) {
@@ -176,9 +211,26 @@ export const generateWordSearch = (words: string[], size = 12): string[][] => {
 
 export const generateWordSearchGrid = (words: string[], size = 12): string[][] => generateWordSearch(words, size)
 
-export const parseQuizQuestions = (value?: string | null): QuizQuestion[] => {
-  const parsed = safeJsonParse<QuizQuestion[]>(value)
-  if (parsed?.length) return parsed
+export const parseQuizQuestions = (value?: unknown): QuizQuestion[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) {
+    const items = parsed
+      .map((item) => {
+        if (typeof item === 'string') return { question: item }
+        if (!item || typeof item !== 'object') return null
+        const record = item as Record<string, unknown>
+        const question = trimText(record.question ?? record.pregunta ?? record.statement)
+        const answer = trimText(record.answer ?? record.respuesta)
+        return question ? { question, answer: answer || undefined } : null
+      })
+      .filter(Boolean) as QuizQuestion[]
+    if (items.length) return items
+  }
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.quizQuestions ?? record.questions ?? record.preguntas
+    if (nested !== undefined && nested !== value) return parseQuizQuestions(nested)
+  }
   const rawText = trimText(value)
   if (!rawText) return []
 
@@ -195,9 +247,31 @@ export const parseQuizQuestions = (value?: string | null): QuizQuestion[] => {
   return rawText.split(/\n+/).map((line) => ({ question: line.trim() }))
 }
 
-export const parseTrueFalse = (value?: string | null): TrueFalseItem[] => {
-  const parsed = safeJsonParse<TrueFalseItem[]>(value)
-  if (parsed?.length) return parsed
+export const parseTrueFalse = (value?: unknown): TrueFalseItem[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) {
+    const items = parsed
+      .map((item) => {
+        if (typeof item === 'string') return parseTrueFalse(item)[0]
+        if (!item || typeof item !== 'object') return null
+        const record = item as Record<string, unknown>
+        const statement = trimText(record.statement ?? record.afirmacion ?? record.question ?? record.pregunta)
+        const rawAnswer = record.answer ?? record.respuesta
+        const answer = typeof rawAnswer === 'boolean'
+          ? rawAnswer
+          : typeof rawAnswer === 'string'
+            ? /verdadero|true/i.test(rawAnswer)
+            : null
+        return statement ? { statement, answer } : null
+      })
+      .filter(Boolean) as TrueFalseItem[]
+    if (items.length) return items
+  }
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.trueFalse ?? record.items ?? record.questions ?? record.preguntas
+    if (nested !== undefined && nested !== value) return parseTrueFalse(nested)
+  }
   const rawText = trimText(value)
   if (!rawText) return []
 
@@ -205,14 +279,35 @@ export const parseTrueFalse = (value?: string | null): TrueFalseItem[] => {
   return lines.map((line) => {
     const answerMatch = line.match(/\b(Verdadero|Falso|True|False)\b/i)
     const answer = answerMatch ? /verdadero|true/i.test(answerMatch[1]) : undefined
-    const statement = line.replace(/\b(Verdadero|Falso|True|False)\b\.?$/i, '').trim()
+    const statement = removeNumberPrefix(line.replace(/\b(Verdadero|Falso|True|False)\b\.?$/i, '').trim())
     return { statement: statement || line, answer: answer ?? null }
   })
 }
 
-export const parseMultipleChoice = (value?: string | null): MultipleChoiceQuestion[] => {
-  const parsed = safeJsonParse<MultipleChoiceQuestion[]>(value)
-  if (parsed?.length) return parsed
+export const parseMultipleChoice = (value?: unknown): MultipleChoiceQuestion[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) {
+    const items = parsed
+      .map((item) => {
+        if (typeof item === 'string') return { question: item, options: ['A.', 'B.', 'C.', 'D.'] }
+        if (!item || typeof item !== 'object') return null
+        const record = item as Record<string, unknown>
+        const question = trimText(record.question ?? record.pregunta ?? record.statement)
+        const rawOptions = record.options ?? record.opciones
+        const options = Array.isArray(rawOptions)
+          ? rawOptions.map(trimText).filter(Boolean)
+          : parseWordsFromText(trimText(rawOptions))
+        const answer = trimText(record.answer ?? record.respuesta ?? record.correctAnswer)
+        return question ? { question, options: options.length ? options : ['A.', 'B.', 'C.', 'D.'], answer: answer || undefined } : null
+      })
+      .filter(Boolean) as MultipleChoiceQuestion[]
+    if (items.length) return items
+  }
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.multipleChoice ?? record.questions ?? record.preguntas
+    if (nested !== undefined && nested !== value) return parseMultipleChoice(nested)
+  }
   const rawText = trimText(value)
   if (!rawText) return []
 
@@ -239,38 +334,86 @@ export const parseMultipleChoice = (value?: string | null): MultipleChoiceQuesti
     .map((line) => ({ question: line, options: ['A.', 'B.', 'C.', 'D.'] }))
 }
 
-export const parseWordSearchWords = (value?: string | null): string[] => {
-  const parsed = safeJsonParse<string[]>(value)
-  if (parsed?.length) {
+export const parseWordSearchWords = (value?: unknown): string[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) {
     return Array.from(
       new Set(
         parsed
-          .map((word) => normalizeWordSearch(String(word || '')))
+          .flatMap((word) => typeof word === 'string' ? word.split(/\s+/) : [])
+          .map(normalizeWord)
           .filter((word) => word.length >= 3 && word.length <= 12)
       )
     )
+  }
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.wordSearch ?? record.words ?? record.palabras ?? record.concepts
+    if (nested !== undefined && nested !== value) return parseWordSearchWords(nested)
   }
 
   const rawText = trimText(value)
   if (!rawText) return []
 
-  const textAfterColon = rawText.includes(':') ? rawText.split(':').slice(1).join(':') : rawText
+  const textAfterColon = rawText.replace(/^(?:Conceptos|Palabras)(?:\s+sugeridos?)?(?:\s+para\s+sopa\s+de\s+letras)?\s*:/i, '')
   const words = textAfterColon
-    .split(/[\n,;•\-]+/)
-    .map((word) => normalizeWordSearch(word.trim()))
+    .split(/[\n,;•·:-]+/)
+    .flatMap((word) => word.trim().split(/\s+/))
+    .map(normalizeWord)
     .filter((word) => word.length >= 3 && word.length <= 12)
 
   return Array.from(new Set(words))
 }
 
-export const parseCrossword = (value?: string | null): CrosswordEntry[] => {
-  const parsed = safeJsonParse<Array<{ number?: number; clue?: string; answer?: string }>>(value)
-  if (parsed?.length) {
-    return parsed.map((item, index) => ({
-      number: item.number ?? index + 1,
-      clue: item.clue || '',
-      length: item.answer ? removeNumberPrefix(item.answer).replace(/\s+/g, '').length : Math.max(4, Math.min(12, Math.round((item.clue || '').length / 6)))
-    }))
+export const extractWordList = (
+  value: unknown,
+  project?: { title?: unknown; area?: unknown; course?: unknown; experienceType?: unknown; description?: unknown; suggestedTags?: unknown }
+): string[] => {
+  const wordsFromText = parseWordSearchWords(value)
+  const projectText = [
+    project?.title,
+    project?.area,
+    project?.course,
+    project?.experienceType,
+    project?.description,
+    project?.suggestedTags
+  ].filter(Boolean).join(' ')
+
+  const fallback = [
+    ...projectText.split(/\s+/),
+    'PROYECTO',
+    'ESCUELA',
+    'EVIDENCIA',
+    'REFLEXION',
+    'APRENDIZAJE',
+    ...(normalizeWord(projectText).includes('HUERTA')
+      ? ['HUERTA', 'SEMILLA', 'COMPOST', 'RIEGO', 'SUELO', 'RAIZ', 'TALLO', 'COSECHA']
+      : [])
+  ]
+    .map(normalizeWord)
+    .filter((word) => word.length >= 3 && word.length <= 12)
+
+  return Array.from(new Set([...wordsFromText, ...fallback])).slice(0, 12)
+}
+
+export const parseCrossword = (value?: unknown): CrosswordEntry[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) {
+    return parsed.map((item, index) => {
+      const record = item && typeof item === 'object' ? item as Record<string, unknown> : {}
+      const clue = trimText(record.clue ?? record.pista ?? item)
+      const answer = trimText(record.answer ?? record.respuesta)
+      return {
+        number: typeof record.number === 'number' ? record.number : index + 1,
+        clue,
+        length: answer ? normalizeWord(answer).length : Math.max(4, Math.min(12, Math.round(clue.length / 6)))
+      }
+    }).filter((item) => item.clue)
+  }
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.crossword ?? record.entries ?? record.pistas
+    if (nested !== undefined && nested !== value) return parseCrossword(nested)
   }
 
   const rawText = trimText(value)
@@ -286,9 +429,24 @@ export const parseCrossword = (value?: string | null): CrosswordEntry[] => {
   })
 }
 
-export const parseMemoryGame = (value?: string | null): MemoryCardItem[] => {
-  const parsed = safeJsonParse<MemoryCardItem[]>(value)
-  if (parsed?.length) return parsed
+export const parseMemoryGame = (value?: unknown): MemoryCardItem[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) {
+    const items = parsed.map((item, index) => {
+      if (typeof item === 'string') return { concept: `Concepto ${index + 1}`, definition: item }
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const concept = trimText(record.concept ?? record.concepto ?? record.term)
+      const definition = trimText(record.definition ?? record.definicion ?? record.description)
+      return concept || definition ? { concept: concept || `Concepto ${index + 1}`, definition: definition || concept } : null
+    }).filter(Boolean) as MemoryCardItem[]
+    if (items.length) return items
+  }
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.memoryGame ?? record.items ?? record.cards ?? record.tarjetas
+    if (nested !== undefined && nested !== value) return parseMemoryGame(nested)
+  }
   const rawText = trimText(value)
   if (!rawText) return []
 
@@ -296,7 +454,10 @@ export const parseMemoryGame = (value?: string | null): MemoryCardItem[] => {
   const items: MemoryCardItem[] = []
 
   lines.forEach((line) => {
-    const parts = line.split(/\s*[\/:-]\s*/) // concept / definition
+    const cleanLine = line.replace(/^Armar pares.*?:\s*/i, '')
+    const parts = cleanLine.includes('/')
+      ? cleanLine.split(/\s*\/\s*/)
+      : cleanLine.split(/\s*[:-]\s*/)
     if (parts.length >= 2) {
       const [concept, ...rest] = parts
       items.push({ concept: concept.trim(), definition: rest.join(' / ').trim() })
@@ -308,9 +469,14 @@ export const parseMemoryGame = (value?: string | null): MemoryCardItem[] => {
   return rawText.split(/\n+/).map((line, index) => ({ concept: `Concepto ${index + 1}`, definition: line.trim() }))
 }
 
-export const parseBingoConcepts = (value?: string | null): string[] => {
-  const parsed = safeJsonParse<string[]>(value)
-  if (parsed?.length) return parsed.filter(Boolean)
+export const parseBingoConcepts = (value?: unknown): string[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) return parsed.map(trimText).filter(Boolean)
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.bingoConcepts ?? record.words ?? record.palabras ?? record.concepts
+    if (nested !== undefined && nested !== value) return parseBingoConcepts(nested)
+  }
   const rawText = trimText(value)
   if (!rawText) return []
   return parseWordsFromText(rawText)
@@ -336,9 +502,24 @@ export const generateBingoCards = (words: string[], cardCount = 4, size = 4): Bi
   return cards
 }
 
-export const parseChallengeCards = (value?: string | null): ChallengeCardItem[] => {
-  const parsed = safeJsonParse<ChallengeCardItem[]>(value)
-  if (parsed?.length) return parsed
+export const parseChallengeCards = (value?: unknown): ChallengeCardItem[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) {
+    const items = parsed.map((item, index) => {
+      if (typeof item === 'string') return { title: `Desafío ${index + 1}`, prompt: item }
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const title = trimText(record.title ?? record.titulo) || `Desafío ${index + 1}`
+      const prompt = trimText(record.prompt ?? record.consigna ?? record.challenge ?? record.desafio)
+      return prompt || title ? { title, prompt: prompt || title } : null
+    }).filter(Boolean) as ChallengeCardItem[]
+    if (items.length) return items
+  }
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.challengeCards ?? record.cards ?? record.tarjetas
+    if (nested !== undefined && nested !== value) return parseChallengeCards(nested)
+  }
   const rawText = trimText(value)
   if (!rawText) return []
 
@@ -357,9 +538,28 @@ export const parseChallengeCards = (value?: string | null): ChallengeCardItem[] 
   return items
 }
 
-export const parseRolePlayingGame = (value?: string | null): RoleCardItem[] => {
-  const parsed = safeJsonParse<RoleCardItem[]>(value)
-  if (parsed?.length) return parsed
+export const parseRolePlayingGame = (value?: unknown): RoleCardItem[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) {
+    const items = parsed.map((item) => {
+      if (typeof item === 'string') return { role: item, goal: 'Representar el rol en la presentación.' }
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const role = trimText(record.role ?? record.rol)
+      const goal = trimText(record.goal ?? record.objetivo)
+      const rawActions = record.actions ?? record.acciones
+      const actions = Array.isArray(rawActions)
+        ? rawActions.map(trimText).filter(Boolean)
+        : undefined
+      return role ? { role, goal: goal || undefined, actions } : null
+    }).filter(Boolean) as RoleCardItem[]
+    if (items.length) return items
+  }
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.rolePlayingGame ?? record.roles ?? record.items
+    if (nested !== undefined && nested !== value) return parseRolePlayingGame(nested)
+  }
   const rawText = trimText(value)
   if (!rawText) return []
 
@@ -367,10 +567,12 @@ export const parseRolePlayingGame = (value?: string | null): RoleCardItem[] => {
   const items: RoleCardItem[] = []
 
   lines.forEach((line) => {
-    const roleMatch = line.match(/^(?:Rol(?:es)?|Role)s?\s*[:\-]\s*(.+)$/i)
+    const roleMatch = line.match(/^Roles?(?:\s+sugeridos?)?\s*[:\-]\s*(.+)$/i)
     if (roleMatch) {
-      const roles = roleMatch[1].split(/[,;]+/).map((text) => text.trim()).filter(Boolean)
-      roles.forEach((role) => items.push({ role, goal: 'Representar el rol en la presentación.' }))
+      const roleDetails = roleMatch[1].match(/^(.*?)(?:\.\s*Objetivo\s*:\s*(.+))?$/i)
+      const roles = (roleDetails?.[1] || roleMatch[1]).split(/[,;]+|\s+y\s+/).map((text) => text.trim()).filter(Boolean)
+      const goal = roleDetails?.[2]?.trim() || 'Representar el rol en la presentación.'
+      roles.forEach((role) => items.push({ role, goal }))
     } else {
       const parts = line.split(/\s*[\-:\|]\s*/)
       if (parts.length >= 2) {
@@ -384,9 +586,23 @@ export const parseRolePlayingGame = (value?: string | null): RoleCardItem[] => {
   return items
 }
 
-export const parseReflectionGame = (value?: string | null): ReflectionItem[] => {
-  const parsed = safeJsonParse<ReflectionItem[]>(value)
-  if (parsed?.length) return parsed
+export const parseReflectionGame = (value?: unknown): ReflectionItem[] => {
+  const parsed = safeJsonParse<unknown>(value)
+  if (Array.isArray(parsed)) {
+    const items = parsed.map((item) => {
+      if (typeof item === 'string') return { prompt: item }
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const prompt = trimText(record.prompt ?? record.pregunta ?? record.reflection ?? record.reflexion)
+      return prompt ? { prompt } : null
+    }).filter(Boolean) as ReflectionItem[]
+    if (items.length) return items
+  }
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+    const nested = record.reflectionGame ?? record.items ?? record.questions ?? record.preguntas
+    if (nested !== undefined && nested !== value) return parseReflectionGame(nested)
+  }
   const rawText = trimText(value)
   if (!rawText) return []
 
@@ -465,6 +681,9 @@ export const TrueFalseCards = ({ items }: { items: TrueFalseItem[] }) => {
             <label><input type="checkbox" disabled /> Verdadero</label>
             <label><input type="checkbox" disabled /> Falso</label>
           </div>
+          {item.answer != null && (
+            <div className="resource-card-answer">Respuesta correcta: {item.answer ? 'Verdadero' : 'Falso'}</div>
+          )}
         </article>
       ))}
     </div>
@@ -487,6 +706,7 @@ export const MultipleChoiceCards = ({ items }: { items: MultipleChoiceQuestion[]
               </label>
             ))}
           </div>
+          {item.answer && <div className="resource-card-answer">Respuesta correcta: {item.answer}</div>}
         </article>
       ))}
     </div>
@@ -498,14 +718,14 @@ export const WordSearchGrid = ({ words, grid }: { words: string[]; grid: string[
   return (
     <div className="wordsearch-block">
       <div
-        className="wordsearch-grid w-fit bg-slate-100 p-4 rounded-xl border border-slate-300 print:border-slate-200 print:bg-white"
+        className="wordsearch-grid"
         style={{ gridTemplateColumns: `repeat(${grid[0]?.length ?? grid.length}, 2rem)` }}
       >
         {grid.flatMap((row, rowIndex) =>
           row.map((letter, colIndex) => (
             <div
               key={`${rowIndex}-${colIndex}`}
-              className="w-8 h-8 border border-slate-300 flex items-center justify-center font-bold text-slate-800 bg-white rounded print:w-6 print:h-6"
+              className="wordsearch-cell"
             >
               {letter}
             </div>
@@ -517,7 +737,7 @@ export const WordSearchGrid = ({ words, grid }: { words: string[]; grid: string[
           <h4>Palabras a encontrar</h4>
           <ul>
             {words.map((word, index) => (
-              <li key={index}>{normalizeWordSearch(word)}</li>
+              <li key={index}>{normalizeWord(word)}</li>
             ))}
           </ul>
         </div>
@@ -685,10 +905,10 @@ export const SectionHeader = ({ title, description }: { title: string; descripti
   </div>
 )
 
-export const FallbackCard = ({ title, text }: { title: string; text: string }) => (
+export const FallbackCard = ({ title, text }: { title: string; text: unknown }) => (
   <div className="resource-card fallback-card">
     <div className="resource-card-title">{title}</div>
-    <p style={{ whiteSpace: 'pre-wrap' }}>{text}</p>
+    <p style={{ whiteSpace: 'pre-wrap' }}>{trimText(text)}</p>
   </div>
 )
 

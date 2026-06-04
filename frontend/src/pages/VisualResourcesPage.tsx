@@ -5,11 +5,12 @@ import { useAuth } from '../context/AuthContext'
 import { Project } from '../types'
 import { getErrorMessage } from '../utils/ui'
 import EvidenceSection from '../components/EvidenceSection'
+import ProjectSourcesSection from '../components/ProjectSourcesSection'
 import {
   parseQuizQuestions,
   parseTrueFalse,
   parseMultipleChoice,
-  parseWordSearchWords,
+  extractWordList,
   generateWordSearch,
   parseCrossword,
   parseMemoryGame,
@@ -62,8 +63,12 @@ export default function VisualResourcesPage() {
   const [activeTab, setActiveTab] = useState('Juegos visuales')
   const [generatingGames, setGeneratingGames] = useState(false)
   const [generatingPresentation, setGeneratingPresentation] = useState(false)
+  const [generationStatus, setGenerationStatus] = useState('')
+  const [generationNotice, setGenerationNotice] = useState('')
+  const [sourceUsageNotice, setSourceUsageNotice] = useState('')
   const [downloadingPptx, setDownloadingPptx] = useState(false)
   const [wordSearchSeed, setWordSearchSeed] = useState(0)
+  const generationTimers = useRef<ReturnType<typeof setTimeout>[]>([])
   const didAutoPrint = useRef(false)
 
   useEffect(() => {
@@ -110,25 +115,9 @@ export default function VisualResourcesPage() {
   const quizItems = useMemo(() => parseQuizQuestions(project?.quizQuestions), [project?.quizQuestions])
   const trueFalseItems = useMemo(() => parseTrueFalse(project?.trueFalse), [project?.trueFalse])
   const multipleChoiceItems = useMemo(() => parseMultipleChoice(project?.multipleChoice), [project?.multipleChoice])
-  const wordSearchWords = useMemo(() => {
-    if (!project) return []
-
-    const parsed = parseWordSearchWords(project.wordSearch)
-    const fallbackFields = [
-      project.title,
-      project.area,
-      project.course,
-      project.experienceType,
-      project.generatedSummary,
-      project.suggestedTags
-    ].filter(Boolean).map((value) => String(value).trim())
-
-    const fallbackWords = fallbackFields.flatMap((value) => parseWordSearchWords(value))
-    const combined = Array.from(new Set([...parsed, ...fallbackWords])).slice(0, 12)
-    return combined
-  }, [project])
+  const wordSearchWords = useMemo(() => project ? extractWordList(project.wordSearch, project) : [], [project])
   const wordSearchGrid = useMemo(
-    () => (wordSearchWords.length ? generateWordSearch(wordSearchWords, 12) : []),
+    () => (wordSearchWords.length ? generateWordSearch(wordSearchWords, 15) : []),
     [wordSearchWords, wordSearchSeed]
   )
   const crosswordItems = useMemo(() => parseCrossword(project?.crossword), [project?.crossword])
@@ -158,36 +147,78 @@ export default function VisualResourcesPage() {
     return cover ? [cover, ...slides] : slides
   }, [project?.presentationTitle, project?.presentationSubtitle, project?.visualSuggestions, parsedSlides])
 
-  const hasGameContent = Boolean(
-    quizItems.length || trueFalseItems.length || multipleChoiceItems.length || wordSearchWords.length || crosswordItems.length || memoryItems.length || bingoWords.length || challengeItems.length || roleItems.length || reflectionItems.length
-  )
+  const hasGeneratedGameContent = Boolean(project && [
+    project.quizQuestions,
+    project.trueFalse,
+    project.multipleChoice,
+    project.wordSearch,
+    project.crossword,
+    project.memoryGame,
+    project.bingoConcepts,
+    project.challengeCards,
+    project.rolePlayingGame,
+    project.reflectionGame
+  ].some((value) => typeof value === 'string' ? value.trim() : value))
   const hasPresentationContent = Boolean(presentationSlides.length || project?.presentationTitle || project?.presentationSubtitle || project?.visualSuggestions || project?.closingMessage)
+
+  const startGenerationStatus = (initialPhase: string) => {
+    setGenerationNotice('')
+    setSourceUsageNotice(project?.sources?.length
+      ? 'Hay fuentes educativas consultadas; se usarán únicamente las pertinentes al tema.'
+      : 'No hay fuentes externas disponibles. Se usará contexto interno del proyecto.')
+    setGenerationStatus(initialPhase)
+    generationTimers.current.forEach(clearTimeout)
+    generationTimers.current = [
+      setTimeout(() => setGenerationStatus('Construyendo contexto pedagógico...'), 600),
+      setTimeout(() => setGenerationStatus('Generando materiales específicos...'), 1400)
+    ]
+  }
+
+  const stopGenerationStatus = () => {
+    generationTimers.current.forEach(clearTimeout)
+    generationTimers.current = []
+    setGenerationStatus('')
+  }
+
+  const reportSourceUsage = (usage?: 'web' | 'internal') => {
+    setSourceUsageNotice(usage === 'web'
+      ? 'La generación usó fuentes educativas pertinentes y visibles.'
+      : 'La generación usó el contexto interno del proyecto porque no había fuentes externas pertinentes.')
+  }
 
   const handleGenerateGames = async () => {
     if (!project) return
+    startGenerationStatus('Analizando el tema del proyecto...')
     setGeneratingGames(true)
     setError('')
     try {
       const updated = await generateGames(project.id)
       setProject(updated)
+      reportSourceUsage(updated.sourceUsage)
+      setGenerationNotice('Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.')
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudieron generar los juegos.'))
     } finally {
       setGeneratingGames(false)
+      stopGenerationStatus()
     }
   }
 
   const handleGeneratePresentation = async () => {
     if (!project) return
+    startGenerationStatus('Analizando el tema del proyecto...')
     setGeneratingPresentation(true)
     setError('')
     try {
       const updated = await generatePresentation(project.id)
       setProject(updated)
+      reportSourceUsage(updated.sourceUsage)
+      setGenerationNotice('Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.')
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudo generar la presentación.'))
     } finally {
       setGeneratingPresentation(false)
+      stopGenerationStatus()
     }
   }
 
@@ -221,7 +252,7 @@ export default function VisualResourcesPage() {
           {canGenerate && (
             <>
               <button className="btn-generate" onClick={handleGenerateGames} disabled={generatingGames}>
-                {generatingGames ? 'Generando juegos...' : 'Generar juegos'}
+                {generatingGames ? 'Generando juegos...' : 'Generar juegos educativos'}
               </button>
               <button className="btn-generate" onClick={handleGeneratePresentation} disabled={generatingPresentation}>
                 {generatingPresentation ? 'Generando presentación...' : 'Generar presentación'}
@@ -236,12 +267,15 @@ export default function VisualResourcesPage() {
       </header>
 
       {error && <div className="error">{error}</div>}
+      {generationStatus && <div className="muted-text">{generationStatus}</div>}
+      {sourceUsageNotice && <div className="muted-text">{sourceUsageNotice}</div>}
+      {generationNotice && <div className="success">{generationNotice}</div>}
       <div className="resource-header">
         <p className="muted-text">Esta vista convierte el contenido existente en recursos visuales listos para imprimir. Las páginas y tarjetas se adaptan a impresión con saltos claros.</p>
       </div>
 
       <div className="resource-tabs">
-        {['Actividades', 'Juegos visuales', 'Presentación visual', 'Evidencias'].map((tab) => (
+        {['Actividades', 'Juegos visuales', 'Presentación visual', 'Fuentes', 'Evidencias'].map((tab) => (
           <button
             key={tab}
             type="button"
@@ -276,6 +310,16 @@ export default function VisualResourcesPage() {
       {activeTab === 'Juegos visuales' && (
         <>
           <SectionHeader title="Juegos visuales" description="Cada juego se presenta con tarjetas, grillas y plantillas listas para imprimir." />
+          {!hasGeneratedGameContent && (
+            <div className="empty-state">
+              <p>No hay materiales de juegos generados todavía.</p>
+              {canGenerate && (
+                <button type="button" className="btn-generate" onClick={handleGenerateGames} disabled={generatingGames}>
+                  {generatingGames ? 'Generando juegos...' : 'Generar juegos educativos'}
+                </button>
+              )}
+            </div>
+          )}
           <ResourceSection title="Quiz visual">
             {quizItems.length ? <QuizCards items={quizItems} /> : project.quizQuestions ? <FallbackCard title="Quiz" text={project.quizQuestions} /> : <p>No hay quiz generado aún.</p>}
           </ResourceSection>
@@ -332,8 +376,6 @@ export default function VisualResourcesPage() {
           <ResourceSection title="Reflexión">
             {reflectionItems.length ? <ReflectionCards items={reflectionItems} /> : project.reflectionGame ? <FallbackCard title="Reflexión" text={project.reflectionGame} /> : <p>No hay tarjetas de reflexión generadas aún.</p>}
           </ResourceSection>
-
-          {!hasGameContent && <div className="empty-state"><p>No hay materiales de juegos disponibles. Puedes generar nuevos juegos si tenés permisos.</p></div>}
         </>
       )}
 
@@ -374,6 +416,15 @@ export default function VisualResourcesPage() {
             canEdit={Boolean(canEditEvidence)}
           />
         </>
+      )}
+
+      {activeTab === 'Fuentes' && (
+        <ProjectSourcesSection
+          projectId={project.id}
+          initialSources={project.sources}
+          canSearch={canGenerate}
+          onSourcesUpdated={(sources) => setProject((current) => current ? { ...current, sources } : current)}
+        />
       )}
     </div>
   )

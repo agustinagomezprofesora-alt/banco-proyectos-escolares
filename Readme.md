@@ -136,6 +136,10 @@ OPENROUTER_MODEL="openrouter/free"
 OPENAI_API_KEY=""
 OPENAI_MODEL="gpt-4o-mini"
 OLLAMA_BASE_URL="http://localhost:11434"
+WEB_SEARCH_PROVIDER="none"
+TAVILY_API_KEY=""
+BRAVE_SEARCH_API_KEY=""
+SERPAPI_API_KEY=""
 INSTITUTION_NAME="Escuela / Institución"
 APP_NAME="Memoria Pedagógica Digital"
 ```
@@ -1021,7 +1025,124 @@ Abrir proyecto
 > Una escuela moderna no es la que usa más plataformas, sino la que logra que el conocimiento producido por sus docentes y estudiantes no se pierda y pueda volver a circular.
 
 ---
+## Generación pedagógica enriquecida con IA
 
+La app no debe generar actividades, juegos o presentaciones usando solamente el título del proyecto.
+
+Antes de generar materiales, el sistema debe construir un contexto pedagógico enriquecido a partir de:
+
+- título del proyecto
+- descripción
+- área curricular
+- curso/año
+- tipo de experiencia
+- ficha generada
+- objetivos
+- etiquetas sugeridas
+- evidencias y links disponibles
+
+Este contexto debe usarse para generar:
+
+- actividades pedagógicas
+- juegos educativos
+- presentación visual
+- presentación PowerPoint
+- recursos visuales imprimibles
+
+---
+
+### Función esperada
+
+El backend debe contar con una función similar a:
+
+```ts
+buildProjectLearningContext(project)
+```
+
+---
+
+## Búsqueda web educativa con fuentes
+
+La búsqueda web educativa es opcional y se activa únicamente cuando una persona con permisos pulsa **Buscar fuentes educativas**. La app no busca por buscar ni realiza consultas web automáticas durante cada generación.
+
+Finalidad:
+
+- enriquecer actividades, juegos y presentaciones con información específica del tema;
+- mostrar al usuario qué fuentes reales se utilizaron;
+- conservar URLs y fechas de consulta para PDF y PowerPoint;
+- mantener revisión humana antes de usar o publicar materiales.
+
+Proveedores configurables:
+
+```env
+WEB_SEARCH_PROVIDER="none"
+TAVILY_API_KEY=""
+BRAVE_SEARCH_API_KEY=""
+SERPAPI_API_KEY=""
+```
+
+Valores admitidos para `WEB_SEARCH_PROVIDER`:
+
+- `none`: no realiza búsquedas y usa únicamente el contexto interno.
+- `wikipedia`: utiliza la API pública de Wikipedia como fuente general inicial.
+- `tavily`: requiere `TAVILY_API_KEY`.
+- `brave`: requiere `BRAVE_SEARCH_API_KEY`.
+- `serpapi`: requiere `SERPAPI_API_KEY`.
+
+La app prioriza dominios educativos, académicos, gubernamentales y organizaciones reconocidas. Evita redes sociales, foros y páginas comerciales. Los resultados se filtran por confiabilidad y pertinencia temática antes de guardarse y de incorporarse al contexto de generación.
+
+Reglas de fuentes y citas:
+
+- Solo se muestran fuentes recuperadas realmente y con URL válida.
+- No se inventan citas cuando no hay resultados.
+- Se guardan título, URL, nota breve, tipo de fuente y fecha de consulta.
+- No se copian textos largos ni se reemplaza la revisión docente.
+- Las fuentes consultadas aparecen en la vista del proyecto, recursos visuales, PDF y PowerPoint.
+- Si no hay proveedor o fuentes disponibles, actividades, juegos y presentaciones continúan con el contexto pedagógico interno.
+- A servicios externos solo se envían datos pedagógicos mínimos del proyecto y conceptos del tema; nunca tokens, contraseñas, claves ni datos internos de usuarios.
+
+### Detección del eje principal en proyectos híbridos
+
+La app debe interpretar proyectos que combinan más de un tema.
+
+Antes de generar actividades, juegos o presentaciones, el sistema debe identificar:
+
+- eje principal del proyecto
+- contexto de aplicación
+- área curricular dominante
+- herramientas o metodologías usadas
+- posibles articulaciones interdisciplinarias
+
+La app no debe elegir el tema dominante solo por una palabra clave aislada.
+
+El área curricular y el título del proyecto tienen prioridad para interpretar el enfoque.
+
+Ejemplos:
+
+- “Robótica aplicada a la huerta” en Educación Tecnológica:
+  - eje principal: robótica educativa / automatización
+  - contexto de aplicación: huerta escolar
+
+- “Podcast sobre historia local” en Comunicación:
+  - eje principal: producción radial / podcast
+  - contexto de aplicación: historia local
+
+- “Revista digital sobre ambiente” en Lengua o Comunicación:
+  - eje principal: producción editorial digital
+  - contexto de aplicación: ambiente
+
+- “Huerta escolar” en Ciencias Naturales:
+  - eje principal: huerta escolar
+
+- “IA para resolver problemas matemáticos” en Matemática:
+  - eje principal: resolución matemática
+  - herramienta: inteligencia artificial
+
+Regla general:
+
+Si un proyecto combina dos temas, la app debe construir una propuesta articulada, pero respetando el área principal cargada y el propósito del proyecto.
+
+No debe generar actividades centradas únicamente en un tema secundario.
 ## Nota final
 
 Este README refleja el estado funcional avanzado del proyecto hasta la Fase 10.

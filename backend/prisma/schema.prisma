@@ -77,6 +77,7 @@ model Project {
 
   links                     ProjectLink[]
   files                     ProjectFile[]
+  sources                   ProjectSource[]
 }
 
 model ProjectLink {
@@ -98,6 +99,21 @@ model ProjectFile {
   size         Int
   url          String
   createdAt    DateTime @default(now())
+}
+
+model ProjectSource {
+  id         Int      @id @default(autoincrement())
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  Int
+  title      String
+  url        String
+  snippet    String?
+  note       String?
+  sourceType String?
+  accessedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@unique([projectId, url])
 }
 
 model InstitutionSettings {

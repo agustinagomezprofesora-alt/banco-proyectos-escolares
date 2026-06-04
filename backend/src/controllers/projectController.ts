@@ -2,9 +2,10 @@ import { Response } from 'express'
 import { prisma } from '../config/prisma'
 import { projectSchema } from '../validators/projectValidator'
 import { AuthRequest } from '../middlewares/authMiddleware'
-import { generateProjectActivities, generateProjectFicha, generateProjectGames, generateProjectPresentation } from '../services/aiService'
+import { buildProjectLearningContext, generateProjectActivities, generateProjectFicha, generateProjectGames, generateProjectPresentation } from '../services/aiService'
 import { generateProjectPdf } from '../services/pdfService'
 import { generateProjectPresentationPptx } from '../services/pptxService'
+import { buildSearchQueryFromProject, getWebSearchProviderStatus, searchEducationalSources, WebSource } from '../services/webSearchService'
 
 const authorSelect = {
   id: true,
@@ -16,7 +17,8 @@ const authorSelect = {
 const projectInclude = {
   author: { select: authorSelect },
   links: true,
-  files: true
+  files: true,
+  sources: { orderBy: { accessedAt: 'desc' as const } }
 } as const
 
 const fichaFields = [
@@ -123,7 +125,28 @@ const getProjectEvidenceForAI = async (projectId: number) => {
   return { links, files }
 }
 
-const buildAIInput = (project: any, evidence: { links: Array<{ label: string; url: string }>; files: Array<{ originalName: string }> }) => ({
+const toWebSource = (source: any): WebSource => ({
+  title: source.title,
+  url: source.url,
+  snippet: source.note || source.snippet || '',
+  sourceType: source.sourceType || undefined,
+  accessedAt: source.accessedAt instanceof Date ? source.accessedAt.toISOString() : String(source.accessedAt)
+})
+
+const getProjectSourcesForAI = async (projectId: number): Promise<WebSource[]> => {
+  const sources = await (prisma as any).projectSource.findMany({
+    where: { projectId },
+    orderBy: { accessedAt: 'desc' },
+    take: 12
+  })
+  return sources.map(toWebSource)
+}
+
+const buildAIInput = (
+  project: any,
+  evidence: { links: Array<{ label: string; url: string }>; files: Array<{ originalName: string }> },
+  webSources: WebSource[] = []
+) => ({
   title: project.title,
   description: project.description,
   teacher: project.teacher,
@@ -152,8 +175,12 @@ const buildAIInput = (project: any, evidence: { links: Array<{ label: string; ur
   estimatedTimeline: project.estimatedTimeline,
   studentReflectionQuestions: project.studentReflectionQuestions,
   links: evidence.links,
-  files: evidence.files
+  files: evidence.files,
+  webSources
 })
+
+const getSourceUsage = (input: ReturnType<typeof buildAIInput>): 'web' | 'internal' =>
+  buildProjectLearningContext(input).sourceNotes.length > 0 ? 'web' : 'internal'
 
 export const listProjects = async (req: AuthRequest, res: Response) => {
   const projects = await prisma.project.findMany({
@@ -438,6 +465,76 @@ export const generateFicha = async (req: AuthRequest, res: Response) => {
   }
 }
 
+export const enrichProjectContext = async (req: AuthRequest, res: Response) => {
+  const id = Number(req.params.id)
+  const project = await prisma.project.findUnique({ where: { id } })
+  if (!project) {
+    return res.status(404).json({ message: 'Proyecto no encontrado' })
+  }
+
+  if (!canAccessProject(req, project.authorId)) {
+    return res.status(403).json({ message: 'No tenés permisos para buscar fuentes de este proyecto.' })
+  }
+
+  try {
+    const [evidence, existingSources] = await Promise.all([
+      getProjectEvidenceForAI(id),
+      getProjectSourcesForAI(id)
+    ])
+    const input = buildAIInput(project, evidence, existingSources)
+    const internalContext = buildProjectLearningContext(input, [])
+    const query = buildSearchQueryFromProject(input, internalContext.keyConcepts)
+    const providerStatus = getWebSearchProviderStatus()
+    const foundSources = await searchEducationalSources(query)
+
+    if (foundSources.length > 0) {
+      await Promise.all(foundSources.map((source) => (prisma as any).projectSource.upsert({
+        where: { projectId_url: { projectId: id, url: source.url } },
+        update: {
+          title: source.title,
+          snippet: source.snippet,
+          note: source.snippet,
+          sourceType: source.sourceType,
+          accessedAt: new Date(source.accessedAt)
+        },
+        create: {
+          projectId: id,
+          title: source.title,
+          url: source.url,
+          snippet: source.snippet,
+          note: source.snippet,
+          sourceType: source.sourceType,
+          accessedAt: new Date(source.accessedAt)
+        }
+      })))
+    }
+
+    const sources = await getProjectSourcesForAI(id)
+    const context = buildProjectLearningContext(buildAIInput(project, evidence, sources), sources)
+    const sourceUsage = context.sourceNotes.length > 0 ? 'web' : 'internal'
+    const message = !providerStatus.enabled
+      ? 'La búsqueda web no está configurada. Se usará el contexto interno del proyecto.'
+      : foundSources.length > 0
+        ? `Se encontraron ${foundSources.length} fuentes educativas confiables y quedaron disponibles para la generación.`
+        : sourceUsage === 'web'
+          ? 'No se encontraron fuentes nuevas. Se conservarán las fuentes pertinentes consultadas anteriormente.'
+          : 'No se encontraron fuentes confiables y pertinentes para esta búsqueda. Se usará el contexto interno del proyecto.'
+
+    return res.json({
+      query,
+      provider: providerStatus.provider,
+      searchPerformed: providerStatus.enabled,
+      sources,
+      context,
+      sourceUsage,
+      message
+    })
+  } catch (error) {
+    console.error('Error enriqueciendo contexto educativo.', error)
+    return res.status(500).json({ message: 'No se pudo enriquecer el contexto educativo.' })
+  }
+}
+
 export const generateActivities = async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
   const project = await prisma.project.findUnique({ where: { id } })
@@ -450,8 +547,10 @@ export const generateActivities = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const evidence = await getProjectEvidenceForAI(id)
-    const result = await generateProjectActivities(buildAIInput(project, evidence))
+    const [evidence, sources] = await Promise.all([getProjectEvidenceForAI(id), getProjectSourcesForAI(id)])
+    const input = buildAIInput(project, evidence, sources)
+    const result = await generateProjectActivities(input)
+    const sourceUsage = getSourceUsage(input)
 
     const updated = await prisma.project.update({
       where: { id },
@@ -459,7 +558,7 @@ export const generateActivities = async (req: AuthRequest, res: Response) => {
       include: projectInclude
     })
 
-    return res.json({ ...updated, generationMode: result.generationMode })
+    return res.json({ ...updated, generationMode: result.generationMode, sourceUsage })
   } catch (error) {
     return res.status(500).json({ message: 'Error generando actividades' })
   }
@@ -477,8 +576,10 @@ export const generateGames = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const evidence = await getProjectEvidenceForAI(id)
-    const result = await generateProjectGames(buildAIInput(project, evidence))
+    const [evidence, sources] = await Promise.all([getProjectEvidenceForAI(id), getProjectSourcesForAI(id)])
+    const input = buildAIInput(project, evidence, sources)
+    const result = await generateProjectGames(input)
+    const sourceUsage = getSourceUsage(input)
 
     const updated = await prisma.project.update({
       where: { id },
@@ -486,7 +587,7 @@ export const generateGames = async (req: AuthRequest, res: Response) => {
       include: projectInclude
     })
 
-    return res.json({ ...updated, generationMode: result.generationMode })
+    return res.json({ ...updated, generationMode: result.generationMode, sourceUsage })
   } catch (error) {
     return res.status(500).json({ message: 'Error generando juegos educativos' })
   }
@@ -504,8 +605,10 @@ export const generatePresentation = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const evidence = await getProjectEvidenceForAI(id)
-    const result = await generateProjectPresentation(buildAIInput(project, evidence))
+    const [evidence, sources] = await Promise.all([getProjectEvidenceForAI(id), getProjectSourcesForAI(id)])
+    const input = buildAIInput(project, evidence, sources)
+    const result = await generateProjectPresentation(input)
+    const sourceUsage = getSourceUsage(input)
 
     const updated = await prisma.project.update({
       where: { id },
@@ -513,7 +616,7 @@ export const generatePresentation = async (req: AuthRequest, res: Response) => {
       include: projectInclude
     })
 
-    return res.json({ ...updated, generationMode: result.generationMode })
+    return res.json({ ...updated, generationMode: result.generationMode, sourceUsage })
   } catch (error) {
     return res.status(500).json({ message: 'Error generando presentación del proyecto' })
   }

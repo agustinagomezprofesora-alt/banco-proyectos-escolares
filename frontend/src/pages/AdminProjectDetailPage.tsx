@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { archiveProject, downloadProjectPdf, downloadProjectPptx, fetchProject, generateActivities, generateGames, generatePresentation, publishProject } from '../api/api'
 import { GenerationMode, Project } from '../types'
@@ -6,6 +6,7 @@ import { getErrorMessage, getStatusBadgeClass, normalizeStatus } from '../utils/
 import EvidenceSection from '../components/EvidenceSection'
 import Button from '../components/ui/Button'
 import ProjectActionCards, { type ProjectActionCardGroup } from '../components/project/ProjectActionCards'
+import ProjectSourcesSection from '../components/ProjectSourcesSection'
 
 const fichaSections: Array<{ key: keyof Project; title: string }> = [
   { key: 'generatedSummary', title: 'Resumen institucional' },
@@ -70,6 +71,9 @@ export default function AdminProjectDetailPage() {
   const [activitiesMode, setActivitiesMode] = useState<GenerationMode | undefined>(undefined)
   const [gamesMode, setGamesMode] = useState<GenerationMode | undefined>(undefined)
   const [presentationMode, setPresentationMode] = useState<GenerationMode | undefined>(undefined)
+  const [generationStatus, setGenerationStatus] = useState('')
+  const [sourceUsageNotice, setSourceUsageNotice] = useState('')
+  const generationTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
     if (!id) return
@@ -139,8 +143,33 @@ export default function AdminProjectDetailPage() {
     }
   }
 
+  const startGenerationStatus = () => {
+    generationTimers.current.forEach(clearTimeout)
+    setSourceUsageNotice(project?.sources?.length
+      ? 'Hay fuentes educativas consultadas; se usarán únicamente las pertinentes al tema.'
+      : 'No hay fuentes externas disponibles. Se usará contexto interno del proyecto.')
+    setGenerationStatus('Analizando el tema del proyecto...')
+    generationTimers.current = [
+      setTimeout(() => setGenerationStatus('Construyendo contexto pedagógico...'), 600),
+      setTimeout(() => setGenerationStatus('Generando materiales específicos...'), 1400)
+    ]
+  }
+
+  const stopGenerationStatus = () => {
+    generationTimers.current.forEach(clearTimeout)
+    generationTimers.current = []
+    setGenerationStatus('')
+  }
+
+  const reportSourceUsage = (usage?: 'web' | 'internal') => {
+    setSourceUsageNotice(usage === 'web'
+      ? 'La generación usó fuentes educativas pertinentes y visibles.'
+      : 'La generación usó el contexto interno del proyecto porque no había fuentes externas pertinentes.')
+  }
+
   const handleGenerateActivities = async () => {
     if (!project) return
+    startGenerationStatus()
     setGeneratingActivities(true)
     setMessage('')
     setError('')
@@ -148,16 +177,19 @@ export default function AdminProjectDetailPage() {
       const updated = await generateActivities(project.id)
       setProject(updated)
       setActivitiesMode(updated.generationMode)
+      reportSourceUsage(updated.sourceUsage)
       setMessage('Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.')
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudieron generar las actividades.'))
     } finally {
       setGeneratingActivities(false)
+      stopGenerationStatus()
     }
   }
 
   const handleGenerateGames = async () => {
     if (!project) return
+    startGenerationStatus()
     setGeneratingGames(true)
     setMessage('')
     setError('')
@@ -165,16 +197,19 @@ export default function AdminProjectDetailPage() {
       const updated = await generateGames(project.id)
       setProject(updated)
       setGamesMode(updated.generationMode)
+      reportSourceUsage(updated.sourceUsage)
       setMessage('Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.')
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudieron generar los juegos.'))
     } finally {
       setGeneratingGames(false)
+      stopGenerationStatus()
     }
   }
 
   const handleGeneratePresentation = async () => {
     if (!project) return
+    startGenerationStatus()
     setGeneratingPresentation(true)
     setMessage('')
     setError('')
@@ -182,11 +217,13 @@ export default function AdminProjectDetailPage() {
       const updated = await generatePresentation(project.id)
       setProject(updated)
       setPresentationMode(updated.generationMode)
+      reportSourceUsage(updated.sourceUsage)
       setMessage('Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.')
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudo generar la presentación.'))
     } finally {
       setGeneratingPresentation(false)
+      stopGenerationStatus()
     }
   }
 
@@ -289,6 +326,8 @@ export default function AdminProjectDetailPage() {
         </div>
       </section>
 
+      {generationStatus && <div className="muted-text">{generationStatus}</div>}
+      {sourceUsageNotice && <div className="muted-text">{sourceUsageNotice}</div>}
       {message && <div className="success">{message}</div>}
       {(activitiesMode || gamesMode || presentationMode) && !message && <div className="success">Contenido generado con asistencia de IA. Revisá y ajustá antes de usar.</div>}
       {error && <div className="error">{error}</div>}
@@ -386,6 +425,13 @@ export default function AdminProjectDetailPage() {
           })}
         </section>
       )}
+
+      <ProjectSourcesSection
+        projectId={project.id}
+        initialSources={project.sources}
+        canSearch
+        onSourcesUpdated={(sources) => setProject((current) => current ? { ...current, sources } : current)}
+      />
 
       <EvidenceSection
         projectId={project.id}
