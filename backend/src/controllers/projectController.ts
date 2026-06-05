@@ -133,8 +133,12 @@ const getProjectEvidenceForAI = async (projectId: number) => {
 const toWebSource = (source: any): WebSource => ({
   title: source.title,
   url: source.url,
-  snippet: source.note || source.snippet || '',
+  snippet: source.summary || source.snippet || source.extractedText || '',
+  description: source.description || undefined,
+  summary: source.summary || undefined,
   sourceType: source.sourceType || undefined,
+  status: source.status || undefined,
+  origin: source.origin || undefined,
   accessedAt: source.accessedAt instanceof Date ? source.accessedAt.toISOString() : String(source.accessedAt)
 })
 
@@ -461,8 +465,11 @@ export const generateFicha = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const evidence = await getProjectEvidenceForAI(id)
-    const result = await generateProjectFicha(buildAIInput(project, evidence))
+    const [evidence, sources] = await Promise.all([
+      getProjectEvidenceForAI(id),
+      getProjectSourcesForAI(id)
+    ])
+    const result = await generateProjectFicha(buildAIInput(project, evidence, sources))
 
     const updated = await prisma.project.update({
       where: { id },
@@ -512,6 +519,9 @@ export const enrichProjectContext = async (req: AuthRequest, res: Response) => {
           title: source.title,
           snippet: source.snippet,
           note: source.snippet,
+          summary: source.snippet,
+          status: 'success',
+          origin: 'web_search',
           sourceType: source.sourceType,
           accessedAt: new Date(source.accessedAt)
         },
@@ -521,6 +531,9 @@ export const enrichProjectContext = async (req: AuthRequest, res: Response) => {
           url: source.url,
           snippet: source.snippet,
           note: source.snippet,
+          summary: source.snippet,
+          status: 'success',
+          origin: 'web_search',
           sourceType: source.sourceType,
           accessedAt: new Date(source.accessedAt)
         }
@@ -530,6 +543,40 @@ export const enrichProjectContext = async (req: AuthRequest, res: Response) => {
     const sources = await getProjectSourcesForAI(id)
     const context = buildProjectLearningContext(buildAIInput(project, evidence, sources), sources)
     const sourceUsage = context.sourceNotes.length > 0 ? 'web' : 'internal'
+    const trustedFoundSources = foundSources.filter((source) => source.sourceType !== 'Fuente general para revision')
+    if (providerStatus.configurationState === 'ready' && foundSources.length > 0) {
+      const generalFoundCount = foundSources.length - trustedFoundSources.length
+      const message = trustedFoundSources.length > 0
+        ? generalFoundCount > 0
+          ? `Se encontraron ${trustedFoundSources.length} fuentes educativas confiables y ${generalFoundCount} fuentes generales para revision.`
+          : `Se encontraron ${trustedFoundSources.length} fuentes educativas confiables y quedaron disponibles para la generacion.`
+        : `Se encontraron ${foundSources.length} fuentes generales para revision. Verifica su pertinencia antes de usarlas como referencia.`
+
+      return res.json({
+        query,
+        provider: providerStatus.provider,
+        searchPerformed: providerStatus.enabled,
+        configurationState: providerStatus.configurationState,
+        sources,
+        context,
+        sourceUsage,
+        message
+      })
+    }
+
+    if (providerStatus.configurationState === 'ready' && sourceUsage !== 'web') {
+      return res.json({
+        query,
+        provider: providerStatus.provider,
+        searchPerformed: providerStatus.enabled,
+        configurationState: providerStatus.configurationState,
+        sources,
+        context,
+        sourceUsage,
+        message: 'No se encontraron fuentes con los filtros actuales. Podes agregar una URL manualmente como fuente.'
+      })
+    }
+
     const message = providerStatus.configurationState === 'disabled'
       ? 'La búsqueda web está desactivada. Se usará el contexto interno del proyecto.'
       : providerStatus.configurationState === 'missing_api_key'

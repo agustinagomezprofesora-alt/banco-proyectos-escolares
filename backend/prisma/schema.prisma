@@ -112,6 +112,11 @@ model ProjectSource {
   url        String
   snippet    String?
   note       String?
+  description String?
+  summary    String?
+  extractedText String?
+  status     String?
+  origin     String?
   sourceType String?
   accessedAt DateTime @default(now())
   createdAt  DateTime @default(now())

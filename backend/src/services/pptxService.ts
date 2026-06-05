@@ -1,5 +1,9 @@
 const pptxgen = require('pptxgenjs')
+import fs from 'fs'
+import path from 'path'
+import sharp from 'sharp'
 import { analyzeProjectPedagogicalFocus, buildProjectLearningContext, type ActivityOrientation } from './aiService'
+import { ProjectAttachment, resolveProjectAttachmentPath } from './projectAttachmentService'
 
 type PptxProject = {
   id: number
@@ -39,8 +43,8 @@ type PptxProject = {
   visualSuggestions?: string | null
   closingMessage?: string | null
   links?: Array<{ label?: string | null; url?: string | null }>
-  files?: Array<{ originalName?: string | null; url?: string | null }>
-  sources?: Array<{ title?: string | null; url?: string | null; snippet?: string | null; note?: string | null; sourceType?: string | null; accessedAt?: Date | string | null }>
+  files?: ProjectAttachment[]
+  sources?: Array<{ title?: string | null; url?: string | null; snippet?: string | null; note?: string | null; description?: string | null; summary?: string | null; status?: string | null; origin?: string | null; sourceType?: string | null; accessedAt?: Date | string | null }>
 }
 
 type PptxSettings = {
@@ -213,6 +217,49 @@ const findParsedSlideBullets = (slides: ParsedSlide[], keywords: string[], maxIt
 
 const hasAnyValue = (...values: Array<string | null | undefined>) => values.some((value) => cleanText(value))
 
+const pptxImageMimeTypes = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+const pptxImageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp'])
+
+const isPptxImageAttachment = (attachment: ProjectAttachment) => {
+  const mimeType = String(attachment.mimeType ?? '').toLowerCase()
+  const extension = path.extname(attachment.originalName || attachment.storedName || attachment.url || '').toLowerCase()
+  return pptxImageMimeTypes.has(mimeType) || pptxImageExtensions.has(extension)
+}
+
+const getPptxImageAttachments = (project: PptxProject) =>
+  (project.files ?? []).filter(isPptxImageAttachment)
+
+const getPptxDocumentAttachments = (project: PptxProject) =>
+  (project.files ?? []).filter((file) => !isPptxImageAttachment(file))
+
+const attachmentTypeLabel = (attachment: ProjectAttachment) => {
+  const extension = path.extname(attachment.originalName || attachment.storedName || attachment.url || '').replace('.', '').toUpperCase()
+  return extension || cleanSingleLine(attachment.mimeType) || 'Archivo'
+}
+
+const buildResourceBullets = (project: PptxProject) => {
+  const links = (project.links ?? [])
+    .map((link) => {
+      const label = cleanSingleLine(link.label)
+      const url = cleanSingleLine(link.url)
+      if (!url) return ''
+      return label ? `${label}: ${url}` : url
+    })
+    .filter(Boolean)
+
+  const documents = getPptxDocumentAttachments(project)
+    .map((file) => {
+      const name = cleanSingleLine(file.originalName)
+      const type = attachmentTypeLabel(file)
+      const url = cleanSingleLine(file.url)
+      if (!name) return ''
+      return `Archivo: ${name}${type ? ` (${type})` : ''}${url ? ` - ${url}` : ''}`
+    })
+    .filter(Boolean)
+
+  return [...links, ...documents, ...buildSourceBullets(project)].slice(0, 5)
+}
+
 const buildMaterialBullets = (project: PptxProject) => {
   const items = [
     hasAnyValue(project.quizQuestions, project.trueFalse, project.multipleChoice) ? 'Preguntas, quiz y consignas de evaluación rápida.' : '',
@@ -251,8 +298,9 @@ const buildSourceBullets = (project: PptxProject) => (project.sources ?? [])
     const url = cleanSingleLine(source.url)
     const accessedAt = source.accessedAt ? new Date(source.accessedAt) : null
     const date = accessedAt && !Number.isNaN(accessedAt.getTime()) ? accessedAt.toLocaleDateString('es-AR') : ''
+    const summary = cleanSingleLine(source.description || source.summary || source.note || source.snippet)
     if (!title || !url) return ''
-    return `${title}. ${url}${date ? ` Consultado el ${date}.` : ''}`
+    return `${title}.${summary ? ` ${summary}` : ''} ${url}${date ? ` Consultado el ${date}.` : ''}`
   })
   .filter(Boolean)
   .slice(0, 5)
@@ -289,7 +337,11 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
     webSources: (project.sources ?? []).map((source) => ({
       title: cleanSingleLine(source.title),
       url: cleanSingleLine(source.url),
-      snippet: cleanSingleLine(source.note || source.snippet),
+      snippet: cleanSingleLine(source.summary || source.description || source.note || source.snippet),
+      description: cleanSingleLine(source.description),
+      summary: cleanSingleLine(source.summary),
+      status: (source.status === 'success' || source.status === 'partial' || source.status === 'failed' ? source.status : undefined) as 'success' | 'partial' | 'failed' | undefined,
+      origin: cleanSingleLine(source.origin),
       sourceType: cleanSingleLine(source.sourceType),
       accessedAt: source.accessedAt ? new Date(source.accessedAt).toISOString() : new Date().toISOString()
     }))
@@ -301,6 +353,7 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
   const visualSuggestion = firstNonEmpty(project.visualSuggestions, 'Imagen o evidencia representativa del proyecto')
   const materials = buildMaterialBullets(project)
   const sourceBullets = buildSourceBullets(project)
+  const resourceBullets = buildResourceBullets(project)
 
   const development = [
     ...findParsedSlideBullets(parsedSlides, ['desarrollo', 'actividad', 'proceso'], 5),
@@ -376,13 +429,15 @@ const buildDeckSlides = (project: PptxProject, settings: ResolvedPptxSettings): 
     }
   ]
 
-  if (sourceBullets.length) {
+  if (resourceBullets.length) {
     slides.push({
-      title: 'Fuentes consultadas',
-      subtitle: 'Referencias educativas utilizadas',
-      bullets: sourceBullets,
-      sideTitle: 'Citas verificables',
-      sideText: 'Solo se incluyen fuentes recuperadas realmente, con URL y fecha de consulta.',
+      title: 'Fuentes y recursos',
+      subtitle: 'Referencias, enlaces y documentos adjuntos',
+      bullets: resourceBullets,
+      sideTitle: 'Material disponible',
+      sideText: sourceBullets.length
+        ? 'Incluye fuentes consultadas y recursos cargados en el proyecto.'
+        : 'Incluye enlaces y documentos adjuntos para recuperar la experiencia.',
       accent: '0F766E'
     })
   } else if (materials.length) {
@@ -660,6 +715,152 @@ const addContentSlide = (pptx: any, deck: DeckSlide, settings: ResolvedPptxSetti
   addFooter(pptx, slide, settings.footerText, slideNumber, settings.secondaryColor)
 }
 
+type PreparedPptxImage = {
+  attachment: ProjectAttachment
+  data: string
+  widthPx: number
+  heightPx: number
+}
+
+const preparePptxImages = async (attachments: ProjectAttachment[]): Promise<PreparedPptxImage[]> => {
+  const prepared: PreparedPptxImage[] = []
+
+  for (const attachment of attachments) {
+    const imagePath = resolveProjectAttachmentPath(attachment)
+    if (!imagePath) {
+      console.warn(`No se pudo resolver la ruta de la imagen adjunta para PowerPoint: ${attachment.originalName}`)
+      continue
+    }
+
+    if (!fs.existsSync(imagePath)) {
+      console.warn(`La imagen adjunta no existe para PowerPoint: ${imagePath}`)
+      continue
+    }
+
+    try {
+      const output = await sharp(imagePath)
+        .rotate()
+        .resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true })
+        .png()
+        .toBuffer({ resolveWithObject: true })
+
+      prepared.push({
+        attachment,
+        data: `data:image/png;base64,${output.data.toString('base64')}`,
+        widthPx: output.info.width || 1,
+        heightPx: output.info.height || 1
+      })
+    } catch (error) {
+      console.warn(`No se pudo incorporar la imagen adjunta "${attachment.originalName}" al PowerPoint.`, error)
+    }
+  }
+
+  return prepared
+}
+
+const fitImageToBox = (image: PreparedPptxImage, box: { x: number; y: number; w: number; h: number }) => {
+  const ratio = Math.min(box.w / image.widthPx, box.h / image.heightPx)
+  const w = image.widthPx * ratio
+  const h = image.heightPx * ratio
+
+  return {
+    x: box.x + (box.w - w) / 2,
+    y: box.y + (box.h - h) / 2,
+    w,
+    h
+  }
+}
+
+const addVisualEvidenceSlides = (
+  pptx: any,
+  images: PreparedPptxImage[],
+  settings: ResolvedPptxSettings,
+  firstSlideNumber: number
+) => {
+  let slideNumber = firstSlideNumber
+
+  for (let index = 0; index < images.length; index += 2) {
+    const slide = pptx.addSlide()
+    const row = images.slice(index, index + 2)
+    const accent = '0F766E'
+
+    addBackground(pptx, slide, accent)
+    slide.addText(settings.institutionName, {
+      x: 0.7,
+      y: 0.45,
+      w: 6.9,
+      h: 0.25,
+      fontFace: 'Aptos',
+      fontSize: 10,
+      bold: true,
+      color: accent,
+      margin: 0
+    })
+    slide.addText('Evidencias visuales', {
+      x: 0.7,
+      y: 0.88,
+      w: 7.95,
+      h: 0.92,
+      fontFace: 'Aptos Display',
+      fontSize: 29,
+      bold: true,
+      color: '0F172A',
+      fit: 'shrink',
+      margin: 0.02
+    })
+
+    const boxes = row.length === 1
+      ? [{ x: 1.45, y: 1.62, w: 10.45, h: 4.55 }]
+      : [
+          { x: 0.75, y: 1.75, w: 5.95, h: 4.2 },
+          { x: 6.85, y: 1.75, w: 5.95, h: 4.2 }
+        ]
+
+    row.forEach((image, column) => {
+      const box = boxes[column]
+      const frameY = box.y - 0.12
+      const frameH = box.h + 0.72
+
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: box.x - 0.12,
+        y: frameY,
+        w: box.w + 0.24,
+        h: frameH,
+        rectRadius: 0.1,
+        fill: { color: 'FFFFFF' },
+        line: { color: 'D7E0EA' }
+      })
+
+      try {
+        slide.addImage({
+          data: image.data,
+          ...fitImageToBox(image, box)
+        })
+      } catch (error) {
+        console.warn(`No se pudo dibujar la imagen adjunta "${image.attachment.originalName}" en el PowerPoint.`, error)
+      }
+
+      slide.addText(truncate(image.attachment.description || image.attachment.originalName, 120), {
+        x: box.x,
+        y: box.y + box.h + 0.2,
+        w: box.w,
+        h: 0.32,
+        fontFace: 'Aptos',
+        fontSize: 9,
+        color: '475569',
+        align: 'center',
+        fit: 'shrink',
+        margin: 0
+      })
+    })
+
+    addFooter(pptx, slide, settings.footerText, slideNumber, settings.secondaryColor)
+    slideNumber += 1
+  }
+
+  return slideNumber
+}
+
 const addClosingSlide = (pptx: any, deck: DeckSlide, settings: ResolvedPptxSettings, slideNumber: number) => {
   const slide = pptx.addSlide()
   const accent = deck.accent || settings.primaryColor
@@ -740,17 +941,27 @@ export const generateProjectPresentationPptx = async (
     lang: 'es-AR'
   }
 
+  const visualEvidenceImages = await preparePptxImages(getPptxImageAttachments(project))
   const deck = buildDeckSlides(project, pptxSettings)
-  deck.forEach((slide, index) => {
+  let slideNumber = 1
+
+  deck.forEach((slide) => {
+    if (slide.type === 'closing' && visualEvidenceImages.length) {
+      slideNumber = addVisualEvidenceSlides(pptx, visualEvidenceImages, pptxSettings, slideNumber)
+    }
+
     if (slide.type === 'cover') {
-      addCoverSlide(pptx, slide, pptxSettings, index + 1)
+      addCoverSlide(pptx, slide, pptxSettings, slideNumber)
+      slideNumber += 1
       return
     }
     if (slide.type === 'closing') {
-      addClosingSlide(pptx, slide, pptxSettings, index + 1)
+      addClosingSlide(pptx, slide, pptxSettings, slideNumber)
+      slideNumber += 1
       return
     }
-    addContentSlide(pptx, slide, pptxSettings, index + 1)
+    addContentSlide(pptx, slide, pptxSettings, slideNumber)
+    slideNumber += 1
   })
 
   const output = await pptx.write({ outputType: 'nodebuffer' })

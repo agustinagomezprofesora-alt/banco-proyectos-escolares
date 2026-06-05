@@ -1262,6 +1262,124 @@ Cuando existe una orientación:
 - **Mixta:** combina una comprensión teórica breve, una aplicación práctica concreta y un cierre o reflexión en cada actividad.
 
 La orientación se combina con el enfoque pedagógico detectado, el nivel educativo, el ciclo, el área, el curso y el contexto enriquecido del proyecto. Se puede definir al cargar o editar una experiencia y, cuando corresponde, aparece en las vistas de detalle, PDF y PowerPoint.
+## PDF enriquecido con archivos adjuntos
+
+La exportación PDF puede enriquecerse automáticamente con archivos adjuntos del proyecto.
+
+### Comportamiento esperado
+
+Si el proyecto incluye imágenes adjuntas (`jpg`, `jpeg`, `png`, `webp`), el PDF debe incorporarlas en una sección visual, por ejemplo:
+
+- Galería de evidencias
+- Imágenes del proyecto
+- Producciones visuales
+
+Si el proyecto incluye documentos adjuntos (`pdf`, `doc`, `docx`, `ppt`, `pptx`, `txt`), el PDF debe incluir una sección de documentación complementaria mostrando:
+
+- nombre del archivo
+- tipo de archivo
+- descripción breve si existe
+- miniatura o vista previa cuando sea posible
+
+### Regla principal
+
+Si el proyecto no tiene archivos adjuntos, el PDF debe seguir funcionando con la lógica actual, sin cambios.
+
+### Requisitos
+
+- no romper la exportación actual
+- evitar páginas en blanco
+- mantener legibilidad
+- respetar proporciones de imágenes
+- no deformar imágenes
+- no repetir archivos innecesariamente
+- si un archivo falla, omitirlo sin romper todo el PDF
+
+### Degradación elegante
+
+Si no se puede generar miniatura de un documento, el PDF debe mostrar una tarjeta informativa con sus metadatos, en lugar de fallar.
+
+### Implementación actual
+
+- Las imágenes JPG, JPEG, PNG y WebP se muestran en una galería de hasta dos imágenes por fila, conservando su proporción y usando el nombre del archivo como epígrafe.
+- Los PDF, documentos de texto, Word, Excel, PowerPoint y otros archivos se muestran como tarjetas con nombre, tipo, tamaño y fecha de carga disponible.
+- Los documentos no se incrustan como texto bruto. Las miniaturas de la primera página de archivos PDF quedan como mejora futura.
+- Si una imagen individual no existe, está dañada o no puede procesarse, se omite y se registra un warning sin interrumpir la exportación.
+- Si el proyecto no tiene archivos adjuntos, el PDF conserva el comportamiento institucional existente.
+
+## URL como fuente de información
+
+La app permite que el docente agregue una URL relacionada con el proyecto para enriquecer la generación de materiales.
+
+La URL puede ser:
+
+- página educativa
+- documento público
+- video
+- recurso institucional
+- artículo informativo
+- fuente oficial
+
+### Comportamiento esperado
+
+Si la URL puede leerse, la app debe extraer:
+
+- título
+- descripción
+- resumen breve
+- conceptos clave
+- fecha de consulta
+
+Si la URL no puede leerse, debe guardarse como fuente enlazada, pero no se debe inventar contenido.
+
+### Uso en generación
+
+Las fuentes URL deben incorporarse al contexto pedagógico enriquecido y pueden usarse para generar:
+
+- ficha institucional
+- actividades pedagógicas
+- juegos educativos
+- presentación visual
+- PowerPoint
+- PDF
+
+### Citas
+
+Toda URL utilizada debe aparecer en la sección:
+
+Fuentes consultadas
+
+Debe incluir:
+
+- título
+- URL
+- fecha de consulta
+- breve nota o resumen si existe
+
+### Seguridad
+
+La app no debe permitir:
+
+- `file://`
+- `localhost`
+- `127.0.0.1`
+- IPs privadas
+- rutas locales
+- descargas enormes
+- redirecciones inseguras
+
+Si una fuente no puede leerse, la app debe degradar con elegancia y seguir funcionando.
+
+### Implementación actual
+
+- `POST /api/projects/:id/sources/url` analiza y guarda una URL.
+- `GET /api/projects/:id/sources` lista las fuentes del proyecto.
+- `DELETE /api/projects/:id/sources/:sourceId` elimina una fuente con control de permisos.
+- Solo se aceptan URLs públicas `http`/`https`; se bloquean hosts locales, IPs privadas y rutas sospechosas.
+- La descarga limita tiempo, tamaño y redirecciones.
+- Las fuentes legibles enriquecen ficha, actividades, juegos y presentación.
+- Las fuentes inaccesibles se conservan solo como enlace y no aportan contenido a la generación.
+- PDF y PowerPoint incluyen título, URL, resumen o descripción disponible y fecha de consulta.
 
 ## Nota final
 

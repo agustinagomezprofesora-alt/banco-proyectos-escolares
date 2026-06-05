@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { listProjects, getProject, createProject, updateProject, deleteProject, generateFicha, getWebSearchStatus, enrichProjectContext, generateActivities, generateGames, generatePresentation, submitForReview, getPublishedProjects, getPublishedProject, duplicateProject, publishProject, archiveProject, downloadProjectPdf, downloadProjectPptx } from '../controllers/projectController'
 import { createProjectLink, listProjectFiles, listProjectLinks, uploadProjectFile } from '../controllers/evidenceController'
 import { uploadProjectFile as uploadProjectFileMiddleware } from '../services/uploadService'
+import { addProjectUrlSource, deleteProjectSource, listProjectSources } from '../controllers/projectSourceController'
 
 const router = Router()
 
@@ -27,6 +28,9 @@ router.get('/:id/links', listProjectLinks)
 router.post('/:id/links', createProjectLink)
 router.get('/:id/files', listProjectFiles)
 router.post('/:id/files', uploadSingleProjectFile, uploadProjectFile)
+router.get('/:id/sources', listProjectSources)
+router.post('/:id/sources/url', addProjectUrlSource)
+router.delete('/:id/sources/:sourceId', deleteProjectSource)
 router.get('/:id', getProject)
 router.post('/', createProject)
 router.put('/:id', updateProject)

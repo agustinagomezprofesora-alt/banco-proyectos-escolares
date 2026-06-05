@@ -40,7 +40,9 @@ export default function ProjectSourcesSection({
   const [status, setStatus] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [showManualSourcePrompt, setShowManualSourcePrompt] = useState(false)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const urlInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     setSources(initialSources)
@@ -72,12 +74,14 @@ export default function ProjectSourcesSection({
   const handleSearch = async () => {
     if (providerStatus?.configurationState === 'disabled' || providerStatus?.configurationState === 'missing_api_key') {
       setMessage(providerStatus.message)
+      setShowManualSourcePrompt(false)
       return
     }
 
     setSearching(true)
     setMessage('')
     setError('')
+    setShowManualSourcePrompt(false)
     const initialSearchStatus = providerStatus?.provider === 'wikipedia'
       ? 'Buscando fuentes educativas generales…'
       : 'Detectando tema del proyecto...'
@@ -94,6 +98,7 @@ export default function ProjectSourcesSection({
       setSources(response.sources)
       onSourcesUpdated?.(response.sources)
       setMessage(response.message)
+      setShowManualSourcePrompt(response.sourceUsage === 'internal' && response.sources.length === 0)
     } catch (err: any) {
       setError(getErrorMessage(err, 'No se pudieron buscar fuentes educativas.'))
     } finally {
@@ -115,6 +120,7 @@ export default function ProjectSourcesSection({
     setStatus('Analizando URL...')
     setMessage('')
     setError('')
+    setShowManualSourcePrompt(false)
     try {
       const response = await addProjectUrlSource(projectId, {
         url: url.trim(),
@@ -168,6 +174,7 @@ export default function ProjectSourcesSection({
             <label>
               URL
               <input
+                ref={urlInputRef}
                 type="url"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
@@ -220,6 +227,14 @@ export default function ProjectSourcesSection({
       )}
       {status && <div className="muted-text">{status}</div>}
       {message && <div className="success">{message}</div>}
+      {showManualSourcePrompt && (
+        <button
+          type="button"
+          onClick={() => urlInputRef.current?.focus()}
+        >
+          Agregar URL como fuente
+        </button>
+      )}
       {error && <div className="error">{error}</div>}
 
       {sources.length > 0 ? (
