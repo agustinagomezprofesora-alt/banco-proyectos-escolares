@@ -3,7 +3,8 @@ import path from 'path'
 import crypto from 'crypto'
 import multer from 'multer'
 
-export const uploadsDir = path.join(process.cwd(), 'uploads')
+const backendRoot = path.resolve(__dirname, '..', '..')
+export const uploadsDir = path.join(backendRoot, 'uploads')
 
 const allowedExtensions = new Set([
   '.pdf',

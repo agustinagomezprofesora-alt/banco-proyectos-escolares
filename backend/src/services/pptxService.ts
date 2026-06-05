@@ -18,6 +18,7 @@ type PptxProject = {
   activityOrientation?: string | null
   area?: string | null
   experienceType?: string | null
+  link?: string | null
   objectives?: string | null
   mainActivities?: string | null
   resourcesUsed?: string | null
@@ -716,10 +717,17 @@ const addContentSlide = (pptx: any, deck: DeckSlide, settings: ResolvedPptxSetti
 }
 
 type PreparedPptxImage = {
-  attachment: ProjectAttachment
+  caption: string
+  sourceUrl?: string
   data: string
   widthPx: number
   heightPx: number
+}
+
+type RemotePptxImageCandidate = {
+  id: string
+  originalName: string
+  sourceUrl: string
 }
 
 const preparePptxImages = async (attachments: ProjectAttachment[]): Promise<PreparedPptxImage[]> => {
@@ -745,13 +753,168 @@ const preparePptxImages = async (attachments: ProjectAttachment[]): Promise<Prep
         .toBuffer({ resolveWithObject: true })
 
       prepared.push({
-        attachment,
+        caption: attachment.description || attachment.originalName,
         data: `data:image/png;base64,${output.data.toString('base64')}`,
         widthPx: output.info.width || 1,
         heightPx: output.info.height || 1
       })
     } catch (error) {
       console.warn(`No se pudo incorporar la imagen adjunta "${attachment.originalName}" al PowerPoint.`, error)
+    }
+  }
+
+  return prepared
+}
+
+const decodeDriveText = (value: string) => value
+  .replace(/\\u003d/g, '=')
+  .replace(/\\u0026/g, '&')
+  .replace(/&quot;/g, '"')
+  .replace(/&#39;/g, "'")
+  .replace(/&amp;/g, '&')
+
+const googleDriveFolderId = (value: string) => {
+  try {
+    const url = new URL(value)
+    if (!url.hostname.toLowerCase().includes('drive.google.com')) return ''
+    const match = url.pathname.match(/\/drive\/folders\/([a-zA-Z0-9_-]+)/)
+    return match?.[1] ?? ''
+  } catch {
+    return ''
+  }
+}
+
+const googleDriveFileId = (value: string) => {
+  try {
+    const url = new URL(value)
+    const hostname = url.hostname.toLowerCase()
+    if (!hostname.includes('drive.google.com') && !hostname.includes('googleusercontent.com')) return ''
+    const fileMatch = url.pathname.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
+    if (fileMatch?.[1]) return fileMatch[1]
+    return url.searchParams.get('id') ?? ''
+  } catch {
+    return ''
+  }
+}
+
+const fetchDriveFolderImageCandidates = async (folderUrl: string): Promise<RemotePptxImageCandidate[]> => {
+  const folderId = googleDriveFolderId(folderUrl)
+  if (!folderId) return []
+
+  try {
+    const response = await fetch(folderUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 MemoriaPedagogicaDigital/1.0' }
+    })
+    if (!response.ok) {
+      console.warn(`No se pudo leer la carpeta de Drive para PowerPoint: ${folderUrl} (${response.status})`)
+      return []
+    }
+
+    const html = await response.text()
+    const candidates = new Map<string, RemotePptxImageCandidate>()
+    const imagePattern = /data-id="([a-zA-Z0-9_-]{20,})"[\s\S]{0,1400}?(?:aria-label|data-tooltip)="([^"]+\.(?:jpe?g|png|webp))\s+Image/gi
+
+    for (const match of html.matchAll(imagePattern)) {
+      const id = match[1]
+      const originalName = cleanSingleLine(decodeDriveText(match[2]))
+      if (!id || !originalName || candidates.has(id)) continue
+      candidates.set(id, {
+        id,
+        originalName,
+        sourceUrl: `https://drive.google.com/file/d/${id}/view`
+      })
+    }
+
+    const result = Array.from(candidates.values()).slice(0, 12)
+    if (candidates.size > result.length) {
+      console.warn(`La carpeta de Drive ${folderId} tiene ${candidates.size} imagenes; se incorporan las primeras ${result.length}.`)
+    }
+    return result
+  } catch (error) {
+    console.warn(`No se pudo analizar la carpeta de Drive para PowerPoint: ${folderUrl}`, error)
+    return []
+  }
+}
+
+const collectRemotePptxImageCandidates = async (project: PptxProject): Promise<RemotePptxImageCandidate[]> => {
+  const urls = Array.from(new Set([
+    cleanSingleLine(project.link),
+    ...(project.links ?? []).map((link) => cleanSingleLine(link.url))
+  ].filter(Boolean)))
+  const candidates = new Map<string, RemotePptxImageCandidate>()
+
+  for (const url of urls) {
+    const folderCandidates = await fetchDriveFolderImageCandidates(url)
+    for (const candidate of folderCandidates) {
+      candidates.set(candidate.id, candidate)
+    }
+
+    if (folderCandidates.length) continue
+
+    const fileId = googleDriveFileId(url)
+    if (fileId && !candidates.has(fileId)) {
+      candidates.set(fileId, {
+        id: fileId,
+        originalName: 'Imagen de Drive',
+        sourceUrl: url
+      })
+    }
+  }
+
+  return Array.from(candidates.values()).slice(0, 12)
+}
+
+const fetchRemoteImageBuffer = async (candidate: RemotePptxImageCandidate) => {
+  const urls = [
+    `https://drive.google.com/thumbnail?id=${encodeURIComponent(candidate.id)}&sz=w1600`,
+    `https://drive.google.com/uc?export=download&id=${encodeURIComponent(candidate.id)}`
+  ]
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        redirect: 'follow',
+        headers: { 'User-Agent': 'Mozilla/5.0 MemoriaPedagogicaDigital/1.0' }
+      })
+      if (!response.ok) continue
+      const contentType = response.headers.get('content-type')?.toLowerCase() ?? ''
+      const buffer = Buffer.from(await response.arrayBuffer())
+      if (!contentType.startsWith('image/') && buffer.length < 16) continue
+      return buffer
+    } catch (error) {
+      console.warn(`No se pudo descargar la imagen remota "${candidate.originalName}" para PowerPoint.`, error)
+    }
+  }
+
+  return null
+}
+
+const prepareRemotePptxImages = async (candidates: RemotePptxImageCandidate[]): Promise<PreparedPptxImage[]> => {
+  const prepared: PreparedPptxImage[] = []
+
+  for (const candidate of candidates) {
+    const buffer = await fetchRemoteImageBuffer(candidate)
+    if (!buffer) {
+      console.warn(`No se pudo descargar la imagen de Drive para PowerPoint: ${candidate.sourceUrl}`)
+      continue
+    }
+
+    try {
+      const output = await sharp(buffer)
+        .rotate()
+        .resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true })
+        .png()
+        .toBuffer({ resolveWithObject: true })
+
+      prepared.push({
+        caption: candidate.originalName,
+        sourceUrl: candidate.sourceUrl,
+        data: `data:image/png;base64,${output.data.toString('base64')}`,
+        widthPx: output.info.width || 1,
+        heightPx: output.info.height || 1
+      })
+    } catch (error) {
+      console.warn(`No se pudo incorporar la imagen de Drive "${candidate.originalName}" al PowerPoint.`, error)
     }
   }
 
@@ -837,10 +1000,10 @@ const addVisualEvidenceSlides = (
           ...fitImageToBox(image, box)
         })
       } catch (error) {
-        console.warn(`No se pudo dibujar la imagen adjunta "${image.attachment.originalName}" en el PowerPoint.`, error)
+        console.warn(`No se pudo dibujar la imagen "${image.caption}" en el PowerPoint.`, error)
       }
 
-      slide.addText(truncate(image.attachment.description || image.attachment.originalName, 120), {
+      slide.addText(truncate(image.caption, 120), {
         x: box.x,
         y: box.y + box.h + 0.2,
         w: box.w,
@@ -941,7 +1104,11 @@ export const generateProjectPresentationPptx = async (
     lang: 'es-AR'
   }
 
-  const visualEvidenceImages = await preparePptxImages(getPptxImageAttachments(project))
+  const [localVisualEvidenceImages, remoteVisualEvidenceImages] = await Promise.all([
+    preparePptxImages(getPptxImageAttachments(project)),
+    collectRemotePptxImageCandidates(project).then(prepareRemotePptxImages)
+  ])
+  const visualEvidenceImages = [...localVisualEvidenceImages, ...remoteVisualEvidenceImages]
   const deck = buildDeckSlides(project, pptxSettings)
   let slideNumber = 1
 
